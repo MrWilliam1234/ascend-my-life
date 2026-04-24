@@ -1,0 +1,2260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ascend · Wake-Up Call</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root{
+  --bg:#F5EFE0;--bg2:#EDE4CC;--bg3:#DDD0B0;
+  --ink:#1A1208;--ink2:#5A4828;--ink3:#9A8868;
+  --green:#4a6741;--orange:#C4722A;
+  --nb:2px solid rgba(0,0,0,.82);
+  --sh:3px 3px 0 rgba(0,0,0,.75);
+  --font-d:'Cormorant Garamond',Georgia,serif;
+  --font-b:'DM Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:#111}
+body{font-family:var(--font-b);background:var(--bg);color:var(--ink);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+/* Global font reset — everything DM Mono unless explicitly Cormorant */
+div,span,p,button,input,label{font-family:inherit}
+/* Only these use Cormorant: large display numbers */
+.display-num{font-family:var(--font-d) !important;font-weight:600}
+body::before{content:'';position:fixed;inset:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(0,0,0,.022) 28px);pointer-events:none;z-index:0}
+
+/* TOP BAR */
+.topbar{position:fixed;top:0;left:0;right:0;z-index:200;padding:14px 40px 12px;background:var(--bg);display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:24px}
+.topbar-logo{font-family:var(--font-d);font-size:38px;font-weight:600;letter-spacing:-.02em;color:var(--ink);line-height:1}
+.topbar-logo em{font-style:normal;color:var(--green)}
+.topbar-center{text-align:center;line-height:1.2}
+.topbar-center .strike{font-family:var(--font-d);font-style:italic;font-size:clamp(13px,1.4vw,17px);color:var(--ink3);text-decoration:line-through;opacity:.55;display:block;margin-bottom:2px}
+.topbar-center .truth{font-family:var(--font-d);font-size:clamp(15px,1.8vw,22px);font-weight:600;color:var(--ink);letter-spacing:-.02em}
+.topbar-center .truth em{font-style:normal;color:var(--green)}
+.topbar-right{display:flex;align-items:center;gap:10px}
+/* slim progress line — bottom of topbar */
+.prog-track{position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--bg3)}
+.prog-fill{height:100%;background:var(--green);transition:width .6s cubic-bezier(.4,0,.2,1)}
+
+/* SCREEN */
+.screen{display:none;min-height:100vh;flex-direction:column;align-items:center;justify-content:flex-start;padding:96px clamp(24px,4vw,60px) 60px;position:relative;z-index:1;width:100%;max-width:min(960px,96vw);margin:0 auto}
+.screen.active{display:flex}
+
+/* THREE BG */
+#threeCanvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0;transition:opacity 1s}
+#threeCanvas.show{opacity:1}
+
+/* TYPOGRAPHY */
+.eyebrow{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3);margin-bottom:8px;text-align:center;width:100%}
+.headline{font-family:var(--font-d);font-size:clamp(34px,8vw,64px);font-weight:600;color:var(--ink);letter-spacing:-.03em;line-height:1.0;text-align:center;margin-bottom:8px;width:100%}
+.headline em{font-style:normal;color:var(--green)}
+.headline strong{color:var(--orange);font-style:normal}
+.subline{font-size:13px;color:var(--ink3);text-align:center;margin-bottom:24px;line-height:1.7;max-width:420px}
+
+/* BUBBLE */
+.bubble{position:relative;background:#fff;border:var(--nb);border-radius:14px 14px 14px 3px;box-shadow:var(--sh);padding:14px 18px;width:100%;max-width:100%;margin-bottom:14px}
+.bubble::after{content:'';position:absolute;bottom:-10px;left:18px;border-left:7px solid transparent;border-right:7px solid transparent;border-top:10px solid rgba(0,0,0,.82)}
+.bubble::before{content:'';position:absolute;bottom:-6px;left:21px;border-left:4px solid transparent;border-right:4px solid transparent;border-top:7px solid #fff;z-index:1}
+.bt{font-family:var(--font-d);font-style:italic;font-size:16px;color:var(--ink);line-height:1.55}
+.bt strong{font-style:normal;color:var(--orange)}
+.bt em{color:var(--green);font-style:normal}
+
+/* ══ SLIDERS ══ */
+.slider-block{
+  width:100%;
+  background:var(--bg2);
+  border:var(--nb);border-radius:2px;
+  box-shadow:var(--sh);
+  padding:16px 18px 18px;
+  margin-bottom:14px;
+  position:relative;
+}
+.slider-lbl{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);font-weight:600;margin-bottom:4px}
+.slider-big{
+  font-family:var(--font-d);font-size:56px;font-weight:600;
+  color:var(--orange);letter-spacing:-.04em;line-height:1;
+  margin-bottom:12px;
+  display:flex;align-items:baseline;gap:6px;
+}
+.slider-big-unit{font-size:22px;color:var(--ink3);font-family:var(--font-d)}
+/* custom range */
+input[type=range]{
+  -webkit-appearance:none;appearance:none;
+  background:transparent;
+  outline:none;cursor:grab;
+}
+input[type=range]:active{cursor:grabbing}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  width:26px;height:26px;
+  background:var(--ink);
+  border:2px solid rgba(0,0,0,.8);
+  border-radius:2px;
+  box-shadow:2px 2px 0 rgba(0,0,0,.6);
+  cursor:grab;
+  transition:transform .1s, background .15s;
+}
+input[type=range]::-webkit-slider-thumb:active{transform:scale(1.1);background:var(--orange)}
+input[type=range]::-moz-range-thumb{
+  width:26px;height:26px;
+  background:var(--ink);border:2px solid rgba(0,0,0,.8);border-radius:2px;
+  box-shadow:2px 2px 0 rgba(0,0,0,.6);cursor:grab;
+}
+
+/* ══ RESULTS SECTION ══ */
+.results-row{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
+  width:100%;max-width:100%;margin-bottom:14px;
+}
+.r-card{
+  background:var(--bg2);border:var(--nb);border-radius:2px;
+  box-shadow:var(--sh);padding:14px 10px;text-align:center;
+}
+.r-card.hot{background:var(--ink);border-color:var(--ink)}
+.r-val{font-family:var(--font-d);font-size:26px;font-weight:600;color:var(--orange);letter-spacing:-.03em;line-height:1;margin-bottom:3px;transition:all .3s}
+.r-card.hot .r-val{color:#FFB84A}
+.r-lbl{font-size:7px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
+.r-card.hot .r-lbl{color:rgba(245,239,224,.4)}
+
+/* CHART */
+.chart-wrap{
+  width:100%;
+  background:var(--ink);border:var(--nb);border-radius:2px;
+  box-shadow:var(--sh);padding:16px 16px 12px;
+  margin-bottom:14px;
+  position:relative;
+}
+.chart-lbl{font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,239,224,.35);margin-bottom:10px}
+#chartC{display:block;width:100%}
+
+/* ══ NAME SCREEN ══ */
+.name-input{width:100%;padding:16px 18px;font-family:var(--font-d);font-size:28px;font-weight:600;color:var(--ink);background:var(--bg2);border:var(--nb);border-radius:2px;box-shadow:var(--sh);outline:none;margin-bottom:12px;transition:background .15s;letter-spacing:-.02em}
+.name-input:focus{border-color:var(--green)}
+.name-input::placeholder{color:var(--bg3)}
+
+/* AGE PICKER */
+.age-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;width:100%;max-width:500px;margin:16px 0}
+.age-btn{
+  padding:10px 16px;
+  font-family:var(--font-b);font-size:11px;font-weight:600;
+  letter-spacing:.06em;
+  background:var(--bg2);border:var(--nb);border-radius:2px;
+  box-shadow:2px 2px 0 rgba(0,0,0,.5);
+  cursor:pointer;transition:all .12s;color:var(--ink);
+}
+.age-btn:hover{background:var(--bg3);transform:translate(-1px,-1px);box-shadow:var(--sh)}
+.age-btn.on{background:var(--ink);color:var(--bg);box-shadow:var(--sh)}
+
+/* STRESS GRID */
+/* stress + shadow CSS moved to .tile and .opt-item */
+
+/* HEART GRID */
+.heart-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;width:100%;margin-bottom:20px}
+.heart-tile{padding:12px 6px;background:var(--bg2);border:var(--nb);border-radius:2px;box-shadow:2px 2px 0 rgba(0,0,0,.45);cursor:pointer;transition:all .15s;text-align:center;display:flex;flex-direction:column;align-items:center;gap:5px}
+.heart-tile:hover{background:var(--bg3);transform:translate(-1px,-1px);box-shadow:var(--sh)}
+.heart-tile.on{box-shadow:var(--sh)}
+.h-icon{font-size:20px;line-height:1}
+.h-lbl{font-size:7.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);line-height:1.2}
+.heart-tile.on .h-lbl{color:#fff}
+
+/* REPORT */
+.report-card{width:100%;background:var(--bg2);border:var(--nb);border-radius:2px;box-shadow:var(--sh);padding:20px;margin-bottom:14px}
+.rep-eyebrow{font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink3);margin-bottom:6px}
+.rep-score-row{display:flex;align-items:baseline;gap:6px;margin-bottom:4px}
+.rep-score{font-family:var(--font-d);font-size:72px;font-weight:600;color:var(--ink);letter-spacing:-.05em;line-height:1}
+.rep-max{font-size:22px;color:var(--ink3);font-family:var(--font-d)}
+.rep-arch{font-family:var(--font-d);font-size:24px;font-weight:600;letter-spacing:-.02em;margin-bottom:3px}
+.rep-truth{font-family:var(--font-d);font-style:italic;font-size:14px;color:var(--ink2);margin-bottom:12px;line-height:1.5}
+.rep-divider{height:1px;background:rgba(0,0,0,.1);margin:10px 0}
+.rep-insight{font-size:11px;color:var(--ink2);line-height:1.7;margin-bottom:4px}
+.rep-insight strong{color:var(--ink);font-weight:600}
+
+.wheel-svg{display:block;margin:0 auto 14px}
+
+/* SHARE */
+.share-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:12px;width:100%;max-width:400px}
+.sh-btn{flex:1;min-width:70px;padding:10px 6px;border:var(--nb);border-radius:2px;box-shadow:var(--sh);font-family:var(--font-b);font-size:7.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:all .12s;text-align:center;text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:3px;color:inherit}
+.sh-btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 rgba(0,0,0,.78)}
+.sh-icon{font-size:16px;line-height:1}
+
+/* EMAIL GATE */
+.gate{width:100%;max-width:400px;padding:22px;background:var(--ink);border:var(--nb);border-radius:2px;box-shadow:var(--sh);text-align:center}
+.gate h3{font-family:var(--font-d);font-size:24px;font-weight:600;color:var(--bg);margin-bottom:4px;letter-spacing:-.02em}
+.gate p{font-size:10px;color:rgba(245,239,224,.45);margin-bottom:14px;line-height:1.6}
+.gate-input{width:100%;padding:12px 14px;font-family:var(--font-b);font-size:12px;color:var(--ink);background:var(--bg);border:var(--nb);border-radius:2px;outline:none;margin-bottom:8px;transition:background .15s}
+.gate-input:focus{background:#fff}
+.gate-divider{display:flex;align-items:center;gap:10px;margin:10px 0}
+.gate-line{flex:1;height:1px;background:rgba(255,255,255,.12)}
+.gate-or{font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,239,224,.25)}
+.gate-socials{display:flex;gap:8px}
+.gate-soc{flex:1;padding:11px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.15);border-radius:2px;font-family:var(--font-b);font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:rgba(245,239,224,.7);cursor:pointer;transition:background .12s}
+.gate-soc:hover{background:rgba(255,255,255,.14)}
+
+/* BUTTONS */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 24px;background:var(--ink);color:var(--bg);border:var(--nb);border-radius:2px;box-shadow:var(--sh);font-family:var(--font-b);font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:all .12s;width:100%;max-width:480px;margin-top:8px}
+.btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 rgba(0,0,0,.78)}
+.btn:active{transform:translate(1px,1px);box-shadow:1px 1px 0}
+.btn.green{background:var(--green)}
+.btn.disabled{opacity:.3;pointer-events:none}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes domZoom{
+  0%{transform:scale(1);box-shadow:2px 2px 0 rgba(0,0,0,.5);z-index:1}
+  100%{transform:scale(1.7);box-shadow:0 32px 80px rgba(0,0,0,.25),0 8px 24px rgba(0,0,0,.15);z-index:50}
+}
+@keyframes gridDim{
+  0%{opacity:1;filter:none}
+  100%{opacity:.28;filter:blur(1.5px)}
+}
+
+@keyframes bubbleAppear{
+  0%{opacity:0;transform:rotate(-3deg) scale(.85) translateY(20px)}
+  60%{transform:rotate(-3deg) scale(1.04) translateY(-4px)}
+  100%{opacity:1;transform:rotate(-3deg) scale(1) translateY(0)}
+}
+/* zoomed domain card */
+.dom-zoomed{
+  animation:domZoom 1.6s cubic-bezier(.25,.46,.45,.94) .6s both;
+  position:relative;z-index:50;
+  transform-origin:bottom right;
+}
+/* dimmed siblings */
+.dom-dimmed{
+  animation:gridDim .6s ease .4s both;
+}
+@keyframes scrollBounce{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(5px)}
+}
+@keyframes scrollFadeIn{
+  from{opacity:0;transform:translateX(-50%) translateY(10px)}
+  to{opacity:1;transform:translateX(-50%) translateY(0)}
+}
+
+/* floating CTA bubble */
+#floatCTA{
+  position:fixed;
+  /* right of center, vertically centered — JS will refine based on ghost position */
+  top:50%;
+  right:2vw;
+  transform:translateY(-50%);
+  z-index:1000;
+  width:min(360px, 28vw);
+  animation:bubbleAppear .6s cubic-bezier(.34,1.2,.64,1) 1.6s both;
+}
+@keyframes floatBubble{
+  0%,100%{transform:translateY(-50%)}
+  50%{transform:translateY(calc(-50% - 6px))}
+}
+#floatCTA .bubble-inner{
+  background:#fff;
+  border:2.5px solid rgba(0,0,0,.82);
+  border-radius:16px 16px 4px 16px;
+  box-shadow:6px 6px 0 rgba(0,0,0,.75);
+  padding:24px 26px;
+  position:relative;
+  overflow:visible;
+  -webkit-font-smoothing:antialiased;
+}
+/* tail pointing left toward zoomed domain */
+#floatCTA .bubble-inner::after{
+  content:'';position:absolute;
+  top:36px;left:-14px;
+  border-top:9px solid transparent;
+  border-bottom:9px solid transparent;
+  border-right:14px solid rgba(0,0,0,.82);
+}
+#floatCTA .bubble-inner::before{
+  content:'';position:absolute;
+  top:40px;left:-9px;
+  border-top:5px solid transparent;
+  border-bottom:5px solid transparent;
+  border-right:10px solid #fff;
+  z-index:1;
+}
+.fu{animation:fadeUp .5s cubic-bezier(.34,1.1,.64,1) both}
+.d1{animation-delay:.08s}.d2{animation-delay:.16s}.d3{animation-delay:.24s}.d4{animation-delay:.32s}
+
+/* ── LIVE ANIMATIONS ── */
+@keyframes heartbeat{0%,100%{transform:scale(1)}14%{transform:scale(1.06)}28%{transform:scale(1)}42%{transform:scale(1.04)}70%{transform:scale(1)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+@keyframes popIn{0%{transform:scale(0.7);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+@keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes glowPulse{0%,100%{box-shadow:3px 3px 0 rgba(0,0,0,.75)}50%{box-shadow:3px 3px 0 rgba(0,0,0,.75),0 0 20px rgba(74,103,65,.4)}}
+@keyframes arrowBounce{0%,100%{transform:translateX(0)}50%{transform:translateX(5px)}}
+@keyframes countUp{from{opacity:0;transform:translateY(8px) scale(.9)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes bubbleIn{0%{opacity:0;transform:scale(.92) translateY(8px)}60%{transform:scale(1.02) translateY(-2px)}100%{opacity:1;transform:scale(1) translateY(0)}}
+
+/* Animated slider track fill */
+.slider-block{position:relative}
+.slider-track-fill{
+  position:absolute;height:12px;
+  background:linear-gradient(to right,var(--orange),#e8943a);
+  border-radius:1px 0 0 1px;
+  pointer-events:none;
+  top:0;left:0;
+  transition:width .08s;
+}
+/* CTA heartbeat */
+.btn.green{animation:heartbeat 2.4s ease-in-out infinite}
+.btn.green:hover{animation:none;transform:translate(-2px,-2px);box-shadow:5px 5px 0 rgba(0,0,0,.78)}
+/* Glow on hot card */
+.r-card.hot{animation:glowPulse 2s ease-in-out infinite}
+/* Bubble entrance */
+.bubble-anim{animation:bubbleIn .4s cubic-bezier(.34,1.2,.64,1) both}
+/* Result val pop */
+.val-pop{animation:countUp .3s cubic-bezier(.34,1.3,.64,1) both}
+/* Arrow bounce on CTA */
+.btn-arrow{display:inline-block;animation:arrowBounce 1.2s ease-in-out infinite}
+
+/* Slider thumb pulse ring */
+input[type=range]::-webkit-slider-thumb{
+  position:relative;
+}
+input[type=range]:focus::-webkit-slider-thumb,
+input[type=range]:active::-webkit-slider-thumb{
+  background:var(--orange);
+  box-shadow:2px 2px 0 rgba(0,0,0,.6),0 0 0 6px rgba(196,114,42,.2);
+  transform:scale(1.15);
+}
+
+/* LIVE COUNTER digits */
+.counter-digit{
+  display:inline-block;
+  transition:transform .2s cubic-bezier(.34,1.4,.64,1), color .3s;
+}
+.counter-digit.changed{
+  animation:countUp .25s cubic-bezier(.34,1.4,.64,1);
+}
+
+/* ══ SCREEN INNER WRAPPER ══ */
+.inner{width:100%;max-width:560px;display:flex;flex-direction:column;align-items:flex-start;gap:0}
+.screen-sub{font-family:var(--font-b);font-size:12px;color:var(--ink3);margin-bottom:20px;line-height:1.6}
+.sec-label{font-family:var(--font-b);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);font-weight:600}
+
+/* ── AGE TRIGGER ── */
+.age-trigger{
+  width:100%;padding:14px 18px;
+  background:var(--bg2);border:var(--nb);border-radius:2px;
+  box-shadow:var(--sh);cursor:pointer;
+  display:flex;align-items:center;justify-content:space-between;
+  font-family:var(--font-d);font-size:22px;font-weight:600;
+  letter-spacing:-.02em;color:var(--ink3);transition:all .12s;
+}
+.age-trigger:hover{background:var(--bg3)}
+
+/* ══ TILE GRID ══ */
+.tile-grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;margin-bottom:16px}
+.tile{
+  padding:14px 14px;background:var(--bg2);border:var(--nb);
+  border-radius:2px;box-shadow:2px 2px 0 rgba(0,0,0,.45);
+  cursor:pointer;transition:all .15s;
+  display:flex;align-items:center;gap:10px;
+}
+.tile:hover{background:var(--bg3);transform:translate(-1px,-1px);box-shadow:var(--sh)}
+.tile.on{background:var(--ink);box-shadow:var(--sh)}
+.tile-icon{font-size:18px;line-height:1;flex-shrink:0}
+.tile-text{font-family:var(--font-b);font-size:11px;line-height:1.4;color:var(--ink)}
+.tile.on .tile-text{color:rgba(245,239,224,.9)}
+
+/* ══ OPTION LIST (shadow) ══ */
+.opt-list{display:flex;flex-direction:column;gap:8px;width:100%}
+.opt-item{
+  padding:14px 16px;background:var(--bg2);border:var(--nb);
+  border-radius:2px;box-shadow:2px 2px 0 rgba(0,0,0,.45);
+  cursor:pointer;transition:all .15s;display:flex;gap:12px;align-items:flex-start;
+}
+.opt-item:hover{background:var(--bg3);transform:translate(-1px,-1px);box-shadow:var(--sh)}
+.opt-item.on{background:var(--ink);box-shadow:var(--sh)}
+.opt-key{
+  width:22px;height:22px;border:1.5px solid rgba(0,0,0,.4);border-radius:1px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-b);font-size:9px;font-weight:700;
+  background:var(--bg);color:var(--ink2);flex-shrink:0;margin-top:2px;
+}
+.opt-item.on .opt-key{background:var(--green);border-color:var(--green);color:#fff}
+.opt-body{font-family:var(--font-b);font-size:12px;color:var(--ink);line-height:1.55}
+.opt-body strong{color:var(--orange)}
+.opt-item.on .opt-body{color:rgba(245,239,224,.9)}
+.opt-item.on .opt-body strong{color:#FFB84A}
+
+/* ══ SPEECH BUBBLE ══ */
+.speech-bubble{
+  position:relative;background:#fff;border:var(--nb);
+  border-radius:14px 14px 14px 3px;box-shadow:var(--sh);
+  padding:14px 18px;width:100%;
+}
+.speech-bubble::after{content:'';position:absolute;bottom:-10px;left:18px;border-left:7px solid transparent;border-right:7px solid transparent;border-top:10px solid rgba(0,0,0,.82)}
+.speech-bubble::before{content:'';position:absolute;bottom:-6px;left:21px;border-left:4px solid transparent;border-right:4px solid transparent;border-top:7px solid #fff;z-index:1}
+
+/* ══ GHOST BUTTON ══ */
+.btn-ghost{
+  background:transparent;border:none;cursor:pointer;
+  font-family:var(--font-b);font-size:9px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink3);
+  margin-top:8px;opacity:.5;text-decoration:underline;
+  padding:4px 0;align-self:center;
+}
+.btn-ghost:hover{opacity:.8}
+
+/* ══ TASTE GRID ══ */
+.taste-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%;margin-bottom:16px}
+
+/* ══ PHOTO UPLOAD ══ */
+.photo-upload-zone{
+  aspect-ratio:1;border:2px dashed rgba(0,0,0,.25);border-radius:2px;
+  background:var(--bg2);cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  transition:all .15s;position:relative;overflow:hidden;
+}
+.photo-upload-zone:hover{border-color:var(--orange);background:var(--bg3)}
+.photo-label{
+  position:absolute;bottom:0;left:0;right:0;
+  background:rgba(0,0,0,.5);color:rgba(255,255,255,.85);
+  font-family:var(--font-b);font-size:6px;letter-spacing:.1em;
+  text-transform:uppercase;text-align:center;padding:2px 0;
+}
+.micro-label{font-family:var(--font-b);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
+.mini-label{font-family:var(--font-b);font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink2)}
+
+/* ══ MINI CARD ══ */
+.mini-card{
+  width:100%;background:var(--bg2);border:var(--nb);
+  border-radius:2px;box-shadow:var(--sh);padding:14px;margin-bottom:14px;
+}
+.aff-preview{
+  font-family:var(--font-d);font-style:italic;font-size:13px;color:var(--ink);
+  line-height:1.45;padding:8px 10px;
+  background:#fff;border:1.5px solid rgba(0,0,0,.65);border-radius:4px 4px 4px 1px;
+  margin-bottom:8px;
+}
+.outcome-strip{
+  margin-top:8px;padding:6px 10px;
+  border-left:2px solid var(--green);background:rgba(74,103,65,.08);
+  font-family:var(--font-b);font-size:10px;color:var(--ink2);line-height:1.5;
+}
+
+@media(max-width:480px){
+  .heart-grid{grid-template-columns:repeat(4,1fr)}
+  .results-row{grid-template-columns:1fr 1fr}
+}
+/* scroll pill — no animation, fade in only */
+</style>
+</head>
+<body>
+<div id="fixedScroll" style="
+  position:fixed;bottom:28px;left:50%;transform:translateX(-50%);
+  z-index:999999;display:none;
+  flex-direction:row;align-items:center;gap:10px;
+  background:#fff;
+  border:3px solid #1A1208;
+  border-radius:99px;
+  padding:10px 20px 10px 16px;
+  box-shadow:4px 4px 0 #1A1208;
+  cursor:pointer;
+  transition:opacity .2s ease;
+  opacity:0;
+" onclick="var s=this;s.style.opacity='0';setTimeout(function(){s.style.display='none'},200);window.scrollBy({top:500,behavior:'smooth'})">
+  <span style="font-family:'DM Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#1A1208;white-space:nowrap">scroll down</span>
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+    <circle cx="10" cy="10" r="9" fill="#1A1208"/>
+    <path d="M6 8l4 5 4-5" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+</div>
+<canvas id="threeCanvas"></canvas>
+
+<div class="topbar">
+  <div class="topbar-logo">Ascend<em>.</em></div>
+  <div class="topbar-center">
+    <span class="strike">Je hebt een wilskracht probleem.</span>
+    <span class="truth">Je hebt een <em>systeem</em> probleem.</span>
+  </div>
+  <div class="topbar-right">
+    <button onclick="devSkipToReport()" style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);background:transparent;border:none;cursor:pointer;opacity:.5;padding:4px 0">skip →</button>
+    <div class="prog-track"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+  </div>
+</div>
+
+<!-- ══ SCREEN 1 · CALCULATOR ══ -->
+<div class="screen active" id="s1" style="max-width:960px;padding:96px 24px 60px;justify-content:flex-start;align-items:flex-start">
+
+  <!-- HEADER — boven de container, breed leesbaar -->
+  <div style="width:100%;margin-bottom:14px">
+    <div style="font-family:var(--font-b);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">Eerlijk. Één vraag.</div>
+    <div style="font-family:var(--font-d);font-size:clamp(28px,4.5vw,48px);font-weight:600;color:var(--ink);letter-spacing:-.03em;line-height:1.05;margin-bottom:8px">Hoeveel uur per dag verdwijnt er gewoon <strong style="color:var(--orange)">zomaar?</strong></div>
+    <div style="font-family:var(--font-b);font-size:12px;color:var(--ink);line-height:1.5;font-weight:500">Scrollen zonder doel &nbsp;·&nbsp; Uitstellen &nbsp;·&nbsp; Half aanwezig zijn. &nbsp;<span style="color:var(--ink3)">Dat kost meer dan je denkt.</span></div>
+  </div>
+
+  <!-- KLADBLOK — overflow:visible zodat bubble eruit kan steken -->
+  <div style="
+    width:100%;
+    display:grid;grid-template-columns:1fr 1.1fr;gap:0;
+    background:var(--bg2);
+    border:2px solid rgba(0,0,0,.82);
+    border-radius:2px;
+    box-shadow:4px 4px 0 rgba(0,0,0,.75);
+    position:relative;
+    overflow:visible;
+  ">
+    <!-- ruled lines -->
+    <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(0,0,0,.04) 28px);pointer-events:none;border-radius:2px;overflow:hidden"></div>
+    <!-- red margin line -->
+    <div style="position:absolute;top:0;bottom:0;left:48px;width:1.5px;background:rgba(196,50,50,.15);pointer-events:none"></div>
+
+    <!-- ─── LEFT COL · sliders + cards ─── -->
+    <div style="padding:22px 20px 22px 22px;border-right:2px solid rgba(0,0,0,.12);position:relative;z-index:2">
+
+      <!-- UREN -->
+      <div style="margin-bottom:22px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <svg width="24" height="30" viewBox="0 0 24 30" fill="none" style="flex-shrink:0">
+            <path d="M2 1h20M2 29h20" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M4.5 1 L12 13 L19.5 1Z" fill="var(--orange)" opacity=".9"/>
+            <path d="M4.5 29 L12 17 L19.5 29Z" fill="var(--ink)" opacity=".22"/>
+            <line x1="12" y1="13" x2="12" y2="17" stroke="var(--orange)" stroke-width="2" stroke-linecap="round" opacity=".7"/>
+          </svg>
+          <div>
+            <div style="font-family:var(--font-b);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2);font-weight:700;margin-bottom:2px">Uren die verdwijnen</div>
+            <div style="font-family:var(--font-d);font-size:52px;font-weight:600;color:var(--orange);letter-spacing:-.04em;line-height:1"><span id="dHval">2</span><span style="font-size:22px;color:var(--ink3);margin-left:4px">uur</span></div>
+          </div>
+        </div>
+        <!-- slider track -->
+        <div style="position:relative;height:26px;margin-bottom:6px">
+          <div style="position:absolute;top:50%;left:0;right:0;height:10px;transform:translateY(-50%);background:var(--bg3);border:2px solid rgba(0,0,0,.6);border-radius:1px;box-shadow:2px 2px 0 rgba(0,0,0,.35)"></div>
+          <div id="slFill1" style="position:absolute;top:50%;left:0;height:10px;transform:translateY(-50%);background:linear-gradient(to right,var(--orange),#e8943a);border-radius:1px 0 0 1px;pointer-events:none;width:19%;box-sizing:border-box;border-right:none"></div>
+          <div id="lure1" style="position:absolute;top:50%;transform:translate(-50%,-50%);width:22px;height:22px;background:var(--orange);border:2px solid rgba(0,0,0,.45);border-radius:2px;opacity:0;pointer-events:none;box-shadow:2px 2px 0 rgba(0,0,0,.35)"></div>
+          <input type="range" id="sl1" min="0.5" max="8" step="0.5" value="2" oninput="onHChange(this.value)" style="position:absolute;inset:0;width:100%;height:100%;-webkit-appearance:none;appearance:none;background:transparent;outline:none;cursor:grab;z-index:3;margin:0">
+        </div>
+        <div style="display:flex;justify-content:space-between;font-family:var(--font-b);font-size:8px;letter-spacing:.05em;color:var(--ink3)"><span>½u</span><span>2u</span><span>4u</span><span>6u</span><span>8u</span></div>
+      </div>
+
+      <!-- UURTARIEF -->
+      <div style="margin-bottom:22px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <svg width="24" height="30" viewBox="0 0 24 30" fill="none" style="flex-shrink:0">
+            <circle cx="12" cy="20" r="9" fill="var(--bg)" stroke="var(--ink)" stroke-width="2"/>
+            <path d="M15.5 16c-.9-.7-2-.9-3.1-.9C9.9 15.1 8 16.9 8 19.1s1.9 4 4.4 4c1.1 0 2.2-.4 3.1-1.1" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/>
+            <line x1="7.5" y1="18.5" x2="14" y2="18.5" stroke="var(--ink)" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="7.5" y1="21" x2="14" y2="21" stroke="var(--ink)" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M12 11C12 11 15 8 14 5C16 7 16.5 10 14.5 12C15.5 11 15.5 9 14.8 7.5C15.5 10 14 12 12 12.5C12 12.5 10.5 10.5 12 11Z" fill="var(--orange)" opacity=".95"/>
+          </svg>
+          <div>
+            <div style="font-family:var(--font-b);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2);font-weight:700;margin-bottom:2px">Jouw uurtarief</div>
+            <div style="font-family:var(--font-d);font-size:52px;font-weight:600;color:var(--orange);letter-spacing:-.04em;line-height:1"><span style="font-size:26px;color:var(--ink3);margin-right:2px">€</span><span id="dRval">35</span></div>
+          </div>
+        </div>
+        <div style="position:relative;height:26px;margin-bottom:6px">
+          <div style="position:absolute;top:50%;left:0;right:0;height:10px;transform:translateY(-50%);background:var(--bg3);border:2px solid rgba(0,0,0,.6);border-radius:1px;box-shadow:2px 2px 0 rgba(0,0,0,.35)"></div>
+          <div id="slFill2" style="position:absolute;top:50%;left:0;height:10px;transform:translateY(-50%);background:linear-gradient(to right,var(--orange),#e8943a);border-radius:1px 0 0 1px;pointer-events:none;width:13%;box-sizing:border-box;border-right:none"></div>
+          <div id="lure2" style="position:absolute;top:50%;transform:translate(-50%,-50%);width:22px;height:22px;background:var(--orange);border:2px solid rgba(0,0,0,.45);border-radius:2px;opacity:0;pointer-events:none;box-shadow:2px 2px 0 rgba(0,0,0,.35)"></div>
+          <input type="range" id="sl2" min="10" max="200" step="5" value="35" oninput="onRChange(this.value)" style="position:absolute;inset:0;width:100%;height:100%;-webkit-appearance:none;appearance:none;background:transparent;outline:none;cursor:grab;z-index:3;margin:0">
+        </div>
+        <div style="display:flex;justify-content:space-between;font-family:var(--font-b);font-size:8px;letter-spacing:.05em;color:var(--ink3)"><span>€10</span><span>€50</span><span>€100</span><span>€150</span><span>€200</span></div>
+      </div>
+
+      <!-- RESULT CARDS -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div style="background:#fff;border:2px solid rgba(0,0,0,.82);border-radius:2px;padding:14px 8px;text-align:center;box-shadow:2px 2px 0 rgba(0,0,0,.5)">
+          <div id="rDay" style="font-family:var(--font-d);font-size:32px;font-weight:600;color:var(--ink);letter-spacing:-.03em;line-height:1;margin-bottom:4px">€70</div>
+          <div style="font-family:var(--font-b);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink2);font-weight:600">Per dag</div>
+        </div>
+        <div style="background:#fff;border:2px solid rgba(0,0,0,.82);border-radius:2px;padding:14px 8px;text-align:center;box-shadow:2px 2px 0 rgba(0,0,0,.5)">
+          <div id="rYear" style="font-family:var(--font-d);font-size:32px;font-weight:600;color:var(--ink);letter-spacing:-.03em;line-height:1;margin-bottom:4px">€25k</div>
+          <div style="font-family:var(--font-b);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink2);font-weight:600">Per jaar</div>
+        </div>
+        <div style="background:var(--ink);border:2px solid rgba(0,0,0,.9);border-radius:2px;padding:12px 8px;text-align:center;box-shadow:2px 2px 0 rgba(0,0,0,.5);animation:glowPulse 2s ease-in-out infinite">
+          <div id="r5yr" style="font-family:var(--font-b);font-size:22px;font-weight:700;color:#FFB84A;letter-spacing:-.02em;line-height:1;margin-bottom:4px">€141k</div>
+          <div style="font-family:var(--font-b);font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:rgba(245,239,224,.75);font-weight:600">5jr compound</div>
+        </div>
+      </div>
+
+      <!-- BIG COMPOUND IMPACT — onderaan linker col -->
+      <div style="
+        margin-top:16px;
+        background:var(--ink);
+        border:2px solid rgba(0,0,0,.82);
+        border-radius:2px;
+        box-shadow:3px 3px 0 rgba(0,0,0,.75);
+        padding:14px 16px;
+        display:flex;align-items:center;justify-content:space-between;
+        position:relative;overflow:hidden;
+      ">
+        <!-- subtle ruled lines -->
+        <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(255,255,255,.03) 28px);pointer-events:none"></div>
+        <div style="position:relative;z-index:1">
+          <div style="font-family:var(--font-b);font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:rgba(245,239,224,.4);font-weight:600;margin-bottom:4px">5 jaar gecompound · 7% p.j.</div>
+          <div id="bigCompound" style="font-family:var(--font-b);font-size:38px;font-weight:700;color:#fff;letter-spacing:-.03em;line-height:1">€ 141.000</div>
+          <div style="font-family:var(--font-b);font-size:9px;color:rgba(245,239,224,.45);margin-top:4px;letter-spacing:.04em">die nooit gecreëerd werd</div>
+        </div>
+        <div style="position:relative;z-index:1;text-align:right">
+          <div style="font-size:32px;line-height:1;margin-bottom:4px">😮</div>
+          <div style="font-family:var(--font-b);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,239,224,.35)">wake-up</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ─── RIGHT COL · grafiek ─── -->
+    <div style="padding:22px 20px;position:relative;z-index:2;display:flex;flex-direction:column">
+      <div style="font-family:var(--font-b);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin-bottom:10px">Als dit geld geïnvesteerd was — 10 jaar · 7% p.j.</div>
+      <div id="chartBox" style="background:var(--ink2);border:2px solid rgba(0,0,0,.82);border-radius:2px;box-shadow:3px 3px 0 rgba(0,0,0,.6);flex:1;padding:14px 14px 10px;min-height:240px">
+        <canvas id="chartC" style="display:block;width:100%"></canvas>
+      </div>
+    </div>
+
+    <!-- ── BUBBLE — hovers half over the right col border, outside container ── -->
+    <div id="s1Bubble" style="
+      position:absolute;
+      bottom:-28px;
+      right:20px;
+      z-index:20;
+      background:#fff;
+      border:2.5px solid rgba(0,0,0,.82);
+      border-radius:14px 14px 4px 14px;
+      box-shadow:4px 4px 0 rgba(0,0,0,.75);
+      padding:12px 16px;
+      max-width:300px;
+      animation:bubbleIn .5s cubic-bezier(.34,1.2,.64,1) .4s both;
+    ">
+      <!-- tail points UP right -->
+      <div style="position:absolute;top:-10px;right:18px;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:10px solid rgba(0,0,0,.82)"></div>
+      <div style="position:absolute;top:-6px;right:21px;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:7px solid #fff;z-index:1"></div>
+      <div id="bubbleTxt" style="font-family:var(--font-d);font-style:italic;font-size:15px;color:var(--ink);line-height:1.5"><em style="color:var(--ink3);font-style:normal;font-size:12px">← sleep de sliders</em><br>en zie wat het je kost.</div>
+    </div>
+
+  </div><!-- /kladblok -->
+
+  <!-- CTA — buiten + onder de container, groot -->
+  <div style="width:100%;display:flex;justify-content:center;margin-top:24px">
+    <button id="ctaBtn" onclick="goS2()" style="
+      padding:13px 28px;
+      background:var(--green);color:#fff;
+      border:2px solid rgba(0,0,0,.82);
+      border-radius:2px;
+      box-shadow:3px 3px 0 rgba(0,0,0,.75);
+      font-family:var(--font-b);font-size:11px;font-weight:700;
+      letter-spacing:.12em;text-transform:uppercase;
+      cursor:pointer;
+      animation:heartbeat 2.4s ease-in-out infinite;
+      display:flex;align-items:center;justify-content:center;gap:8px;
+    ">
+      <span style="font-size:16px;filter:grayscale(0)">😮</span>
+      <span>Dit raakt me. Ga verder</span>
+      <span style="display:inline-block;animation:arrowBounce 1.2s ease-in-out infinite">→</span>
+    </button>
+  </div>
+</div>
+<!-- ══ SCREEN 2 · NAAM + LEEFTIJD ══ -->
+<div class="screen" id="s2">
+  <div class="inner">
+    <div class="eyebrow">Laten we het persoonlijk maken</div>
+    <div class="headline">Hoe heet je<br>eigenlijk<em>?</em></div>
+
+    <input class="name-input" id="nameInput" type="text" placeholder="Jouw naam" autocomplete="off" autocorrect="off" spellcheck="false">
+
+    <div class="sec-label" style="margin-top:24px;margin-bottom:10px">En je leeftijd?</div>
+    <div style="position:relative;width:100%">
+      <button id="agePickerBtn" onclick="toggleAgePicker()" class="age-trigger">
+        <span id="ageDisplay" style="color:var(--ink3)">35 jaar</span>
+        <span id="ageArrow" style="transition:transform .25s">↓</span>
+      </button>
+      <div id="agePicker" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:300;background:var(--bg);border:var(--nb);border-radius:2px;box-shadow:4px 4px 0 rgba(0,0,0,.75);overflow:hidden">
+        <div style="position:absolute;top:50%;left:0;right:0;height:44px;transform:translateY(-50%);background:rgba(0,0,0,.06);border-top:1.5px solid rgba(0,0,0,.15);border-bottom:1.5px solid rgba(0,0,0,.15);pointer-events:none;z-index:2"></div>
+        <div style="position:absolute;top:0;left:0;right:0;height:64px;background:linear-gradient(to bottom,var(--bg) 20%,transparent);pointer-events:none;z-index:3"></div>
+        <div style="position:absolute;bottom:0;left:0;right:0;height:64px;background:linear-gradient(to top,var(--bg) 20%,transparent);pointer-events:none;z-index:3"></div>
+        <div id="ageWheelTrack" style="height:220px;overflow-y:scroll;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none">
+          <div style="height:88px"></div>
+          <div id="ageWheelItems"></div>
+          <div style="height:88px"></div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn disabled" id="btnS2" style="margin-top:16px" onclick="goS3()">Verder →</button>
+  </div>
+</div>
+
+<!-- ══ SCREEN 3 · STRESS ══ -->
+<div class="screen" id="s3">
+  <div class="inner">
+    <div class="eyebrow">Mind · Body · Energie</div>
+    <div class="headline">Herken jij dit,<br><em id="n3">naam</em>?</div>
+    <div class="screen-sub">Vink aan wat van toepassing is.</div>
+
+    <div class="tile-grid2" id="stressGrid">
+      <div class="tile" data-v="1" onclick="toggleStress(this)"><span class="tile-icon">😮‍💨</span><span class="tile-text">Ik slaap slecht en word moe wakker</span></div>
+      <div class="tile" data-v="2" onclick="toggleStress(this)"><span class="tile-icon">🌀</span><span class="tile-text">Mijn hoofd stopt niet, ook 's avonds</span></div>
+      <div class="tile" data-v="3" onclick="toggleStress(this)"><span class="tile-icon">📵</span><span class="tile-text">Ik grijp automatisch naar mijn telefoon</span></div>
+      <div class="tile" data-v="4" onclick="toggleStress(this)"><span class="tile-icon">🔋</span><span class="tile-text">Mijn energie is op voor de dag klaar is</span></div>
+      <div class="tile" data-v="5" onclick="toggleStress(this)"><span class="tile-icon">😶</span><span class="tile-text">Ik voel me numb — niet blij, niet verdrietig</span></div>
+      <div class="tile" data-v="6" onclick="toggleStress(this)"><span class="tile-icon">⏰</span><span class="tile-text">Geen tijd voor wat echt telt voor mij</span></div>
+    </div>
+
+    <div id="stressResp" style="display:none;width:100%">
+      <div class="speech-bubble" style="margin-bottom:12px">
+        <div class="bt" id="stressMsg">...</div>
+      </div>
+      <button class="btn" onclick="goS4()">Ja. Ga verder →</button>
+    </div>
+    <button class="btn-ghost" onclick="goS4()">Dit geldt niet voor mij →</button>
+  </div>
+</div>
+
+<!-- ══ SCREEN 4 · SHADOW ══ -->
+<div class="screen" id="s4">
+  <div class="inner">
+    <div class="eyebrow">Shadow Layer · Zelf-sabotage</div>
+    <div class="headline">Wat houdt jou<br>echt <strong>tegen</strong>?</div>
+    <div class="screen-sub">Één eerlijk antwoord. Dit is voor jou.</div>
+
+    <div class="opt-list">
+      <div class="opt-item" data-s="11drop" onclick="pickShadow(this)">
+        <div class="opt-key">A</div>
+        <div class="opt-body"><strong>Ik begin goed, maar stop na 1–2 weken.</strong><br>Het vuur dooft voor het systeem verankerd is.</div>
+      </div>
+      <div class="opt-item" data-s="qualifier" onclick="pickShadow(this)">
+        <div class="opt-key">B</div>
+        <div class="opt-body"><strong>"Als ik eerst X, dan begin ik."</strong><br>Het perfecte moment blijft maar uit.</div>
+      </div>
+      <div class="opt-item" data-s="sunday" onclick="pickShadow(this)">
+        <div class="opt-key">C</div>
+        <div class="opt-body"><strong>Ik plan perfect, voer nauwelijks uit.</strong><br>Zondag gemotiveerd, maandag hetzelfde als altijd.</div>
+      </div>
+      <div class="opt-item" data-s="saboteur" onclick="pickShadow(this)">
+        <div class="opt-key">D</div>
+        <div class="opt-body"><strong>Zodra het goed gaat, maak ik het kapot.</strong><br>Succes voelt onveilig — ik weet niet waarom.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SCREEN 5 · HART ══ -->
+<div class="screen" id="s5">
+  <div class="inner">
+    <div class="eyebrow">Jouw leven · Jouw prioriteiten</div>
+    <div class="headline">Waar ligt jouw<br><em>hart</em>?</div>
+    <div class="screen-sub">Selecteer minimaal 2. Dit personaliseert jouw rapport.</div>
+
+    <div class="heart-grid">
+      <div class="heart-tile" data-d="Gezin"        onclick="toggleHeart(this)" data-c="#cc2a7a"><span class="h-icon">👨‍👩‍👧</span><span class="h-lbl">Gezin</span></div>
+      <div class="heart-tile" data-d="Liefde"       onclick="toggleHeart(this)" data-c="#cc2a7a"><span class="h-icon">❤️</span><span class="h-lbl">Liefde</span></div>
+      <div class="heart-tile" data-d="Vrijheid"     onclick="toggleHeart(this)" data-c="#C4722A"><span class="h-icon">💰</span><span class="h-lbl">Vrijheid</span></div>
+      <div class="heart-tile" data-d="Energie"      onclick="toggleHeart(this)" data-c="#0a8a2a"><span class="h-icon">💪</span><span class="h-lbl">Energie</span></div>
+      <div class="heart-tile" data-d="Rust"         onclick="toggleHeart(this)" data-c="#7a3acc"><span class="h-icon">🧘</span><span class="h-lbl">Rust</span></div>
+      <div class="heart-tile" data-d="Carrière"     onclick="toggleHeart(this)" data-c="#0a8a5a"><span class="h-icon">🚀</span><span class="h-lbl">Carrière</span></div>
+      <div class="heart-tile" data-d="Creativiteit" onclick="toggleHeart(this)" data-c="#cc4a1a"><span class="h-icon">🎨</span><span class="h-lbl">Creativiteit</span></div>
+      <div class="heart-tile" data-d="Impact"       onclick="toggleHeart(this)" data-c="#0a6a6a"><span class="h-icon">🌊</span><span class="h-lbl">Impact</span></div>
+      <div class="heart-tile" data-d="Groei"        onclick="toggleHeart(this)" data-c="#4a6741"><span class="h-icon">🌱</span><span class="h-lbl">Groei</span></div>
+      <div class="heart-tile" data-d="Avontuur"     onclick="toggleHeart(this)" data-c="#0a5acc"><span class="h-icon">✈️</span><span class="h-lbl">Avontuur</span></div>
+    </div>
+
+    <button class="btn green disabled" id="btnHeart" onclick="goS5b()">Proef het systeem →</button>
+    <button class="btn-ghost" onclick="goS6()">Overslaan →</button>
+  </div>
+</div>
+
+<!-- ══ SCREEN 5b · TASTE IT ══ -->
+<div class="screen" id="s5b">
+  <div class="inner">
+    <div class="eyebrow">Proef het systeem</div>
+    <div class="headline">Kies één domein.<br>Zie <em>het effect.</em></div>
+    <div class="screen-sub">Optioneel: upload voor/na foto. Wij genereren jouw affirmatie en systeem live.</div>
+
+    <div id="tasteDomGrid" class="taste-grid"></div>
+
+    <div id="tasteUpload" style="display:none;width:100%">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div id="uploadBefore" onclick="triggerUpload('before')" class="photo-upload-zone">
+          <input type="file" id="fileBefore" accept="image/*" style="display:none" onchange="loadPhoto('before',this)">
+          <img id="prevBefore" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;filter:grayscale(1) contrast(1.1)">
+          <div id="lblBefore" style="text-align:center;z-index:1">
+            <div style="font-size:22px;margin-bottom:4px">📷</div>
+            <div class="micro-label">Nu · Eerlijk</div>
+          </div>
+        </div>
+        <div id="uploadAfter" onclick="triggerUpload('after')" class="photo-upload-zone">
+          <input type="file" id="fileAfter" accept="image/*" style="display:none" onchange="loadPhoto('after',this)">
+          <img id="prevAfter" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;filter:grayscale(1) sepia(.3) contrast(1.15)">
+          <div id="lblAfter" style="text-align:center;z-index:1">
+            <div style="font-size:22px;margin-bottom:4px">🌟</div>
+            <div class="micro-label">+1 Jaar · Doel</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="tasteMiniCard" class="mini-card" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div id="tcDomName" class="mini-label">FINANCE</div>
+          <div id="tcScore" style="font-family:var(--font-d);font-size:20px;font-weight:600;color:var(--orange)">?/10</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+          <div style="aspect-ratio:1.3;background:var(--bg3);border:1.5px solid rgba(0,0,0,.4);border-radius:1px;overflow:hidden;position:relative">
+            <img id="tcImgBefore" style="width:100%;height:100%;object-fit:cover;display:none;filter:grayscale(1) contrast(1.1)">
+            <div class="photo-label">Nu</div>
+          </div>
+          <div style="aspect-ratio:1.3;background:var(--bg3);border:1.5px solid rgba(0,0,0,.4);border-radius:1px;overflow:hidden;position:relative">
+            <img id="tcImgAfter" style="width:100%;height:100%;object-fit:cover;display:none;filter:grayscale(1) sepia(.3) contrast(1.15)">
+            <div class="photo-label">+1 jaar</div>
+          </div>
+        </div>
+        <div id="tcAff" class="aff-preview"></div>
+        <div class="micro-label" style="margin-bottom:6px">Dagelijks systeem</div>
+        <div id="tcChecks" style="display:flex;flex-direction:column;gap:4px"></div>
+        <div id="tcOutcome" class="outcome-strip"></div>
+      </div>
+
+      <button class="btn green" id="btnTaste" onclick="goS6()" style="display:none">Toon mijn rapport →</button>
+    </div>
+
+    <button class="btn-ghost" onclick="goS6()">Overslaan →</button>
+  </div>
+</div>
+
+<!-- ══ SCREEN 6 · VOLLEDIG RAPPORT POSTER ══ -->
+<div class="screen" id="s6" style="max-width:1100px;padding:96px 16px 60px;align-items:flex-start;justify-content:flex-start">
+
+  <!-- INTRO: breed over de volle breedte -->
+  <div style="width:100%;margin-bottom:6px">
+    <div style="font-family:var(--font-b);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3);margin-bottom:8px" id="s6eye">Wake-Up Report</div>
+    <!-- Brede titel + score naast elkaar -->
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:10px">
+      <div style="font-family:var(--font-d);font-size:clamp(28px,3.8vw,48px);font-weight:600;color:var(--ink);letter-spacing:-.03em;line-height:1.05">
+        Op basis van jouw antwoorden<br>hebben we jouw <em style="font-style:normal;color:var(--orange)">Life Blueprint</em> gegenereerd.
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-family:var(--font-d);font-size:72px;font-weight:600;letter-spacing:-.05em;color:var(--ink);line-height:1" id="repScore">—</div>
+        <div style="font-family:var(--font-b);font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:var(--orange);font-weight:700">Life Score</div>
+        <div style="font-family:var(--font-d);font-size:18px;font-weight:600;color:var(--ink);letter-spacing:-.02em" id="repArch">—</div>
+      </div>
+    </div>
+    <!-- Subline + truth als één brede regel -->
+    <div style="display:flex;align-items:baseline;gap:24px;flex-wrap:wrap;padding-bottom:14px;border-bottom:2px solid rgba(0,0,0,.12);margin-bottom:14px">
+      <div style="font-family:var(--font-b);font-size:12px;color:var(--ink2);line-height:1.7;flex:1;min-width:300px">
+        Dit is een gedeeltelijk profiel — <strong id="unlockedCountText">3</strong> van de 12 domeinen zichtbaar. De rest is verborgen totdat je inlogt. Kijk naar wat er al zichtbaar is en wat het je kost dat je het nog niet hebt opgezet.
+      </div>
+      <div style="font-family:var(--font-d);font-style:italic;font-size:14px;color:var(--ink3);max-width:320px;line-height:1.5" id="repTruth">—</div>
+    </div>
+  </div>
+
+  <!-- POSTER PAPER ZONE -->
+  <div style="
+    width:100%;
+    background:#FDFAF4;
+    border:3px solid rgba(0,0,0,.88);
+    border-radius:2px;
+    box-shadow:8px 8px 0 rgba(0,0,0,.72), 0 2px 40px rgba(0,0,0,.08);
+    overflow:visible;
+    margin-bottom:14px;
+    position:relative;
+  ">
+    <!-- ruled lines -->
+    <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(0,0,0,.025) 28px);pointer-events:none;z-index:0"></div>
+    <!-- red margin -->
+    <div style="position:absolute;top:0;bottom:0;left:44px;width:1.5px;background:rgba(196,50,50,.15);pointer-events:none;z-index:0"></div>
+
+    <div style="position:relative;z-index:1">
+
+      <!-- POSTER HEADER -->
+      <div style="padding:12px 16px 10px;border-bottom:2px solid rgba(0,0,0,.15);background:var(--bg2);display:flex;align-items:flex-start;justify-content:space-between">
+        <div>
+          <div style="font-family:var(--font-b);font-size:7px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink3);margin-bottom:3px">Ascend · Life Blueprint</div>
+          <div style="font-family:var(--font-d);font-size:36px;font-weight:600;letter-spacing:-.03em;color:var(--ink);line-height:.95">Your Life <em style="font-style:normal;color:var(--green)">Blueprint.</em></div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:var(--font-d);font-size:52px;font-weight:600;letter-spacing:-.05em;line-height:1;color:var(--ink)" id="repScore">—</div>
+          <div style="font-family:var(--font-b);font-size:7px;letter-spacing:.1em;text-transform:uppercase;color:var(--orange);font-weight:700">Life Score</div>
+          <div style="font-family:var(--font-d);font-size:13px;font-weight:600;color:var(--ink)" id="repArch">—</div>
+        </div>
+      </div>
+
+      <!-- SCORE BAR + TRUTH -->
+      <div style="padding:7px 16px;border-bottom:1px solid rgba(0,0,0,.1);display:flex;align-items:center;gap:12px;background:var(--bg)">
+        <div style="flex:1;height:8px;background:var(--bg3);border:1.5px solid rgba(0,0,0,.5);border-radius:1px;overflow:hidden;box-shadow:2px 2px 0 rgba(0,0,0,.3)">
+          <div id="scoreBar" style="height:100%;width:44%;background:var(--orange);position:relative">
+            <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.28) 0,rgba(255,255,255,.28) 5px,transparent 5px,transparent 9px)"></div>
+          </div>
+        </div>
+        <div style="font-family:var(--font-d);font-style:italic;font-size:11px;color:var(--ink3);max-width:400px" id="repTruth">—</div>
+      </div>
+
+      <!-- DOMAIN GRID -->
+      <div style="padding:10px 10px 0;background:var(--bg)">
+        <div style="font-family:var(--font-b);font-size:7px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);margin-bottom:6px">12 domains — affirmation · system · Daily · Weekly · Monthly checkpoints · why it matters</div>
+        <div id="reportDomGrid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:12px;position:relative"></div>
+      </div>
+
+      <!-- SHADOW ZONE — dark like v19 -->
+      <div style="background:#1A1208;padding:14px 16px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <svg width="28" height="28" viewBox="0 0 42 42" fill="none"><circle cx="21" cy="21" r="19" stroke="rgba(255,255,255,.4)" stroke-width="1.5"/><path d="M21 2 A19 19 0 0 0 21 40 Z" fill="rgba(255,255,255,.08)"/><line x1="21" y1="21" x2="8" y2="6" stroke="rgba(255,255,255,.6)" stroke-width="1.5" stroke-linecap="round"/><line x1="21" y1="21" x2="36" y2="8" stroke="rgba(255,255,255,.5)" stroke-width="1.2" stroke-linecap="round"/><line x1="21" y1="21" x2="34" y2="30" stroke="rgba(255,255,255,.45)" stroke-width="1" stroke-linecap="round"/><circle cx="21" cy="21" r="2.5" fill="rgba(255,255,255,.7)"/></svg>
+          <div>
+            <div style="font-family:var(--font-d);font-size:18px;font-weight:600;color:#fff">The Shadow Layer</div>
+            <div style="font-family:var(--font-b);font-size:7px;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,239,224,.3)">Patroon gedetecteerd · Eerlijk bekijken</div>
+          </div>
+        </div>
+        <div style="font-family:var(--font-b);font-size:10px;color:rgba(245,239,224,.4);line-height:1.7;margin-bottom:10px">Dit patroon is geen falen. Het is de versie van jou die op de automatische piloot loopt. Benoemen is de eerste daad van echte verandering.</div>
+        <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:2px;padding:12px 14px">
+          <div style="font-family:var(--font-b);font-size:7px;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,239,224,.3);margin-bottom:4px">Jouw patroon</div>
+          <div style="font-family:var(--font-d);font-size:20px;font-weight:600;color:#fff;margin-bottom:4px" id="shadowName">—</div>
+          <div style="font-family:var(--font-b);font-size:11px;color:rgba(245,239,224,.65);line-height:1.6;margin-bottom:10px" id="shadowDesc">—</div>
+          <div style="font-family:var(--font-b);font-size:7px;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,239,224,.25);margin-bottom:5px">Shadow work · deze week</div>
+          <div id="shadowChecks"></div>
+        </div>
+      </div>
+
+      <!-- WISDOM -->
+      <div style="padding:10px 16px;border-top:1px solid rgba(0,0,0,.08);border-bottom:1px solid rgba(0,0,0,.08);background:var(--bg2)">
+        <div style="font-family:var(--font-d);font-size:11px;color:var(--ink2);line-height:1.8"><strong>Right Action</strong> — je weet al wat te doen. Elk systeem dicht de kloof. &nbsp;·&nbsp; <strong>Aanwezigheid</strong> — jouw leven gebeurt hier, nu. &nbsp;·&nbsp; <strong>Onderscheid</strong> — weten wat telt vs wat urgent <em style="font-style:normal;color:var(--orange)">voelt</em>.</div>
+      </div>
+
+      <!-- CALLOUT -->
+      <div style="padding:12px 16px;background:var(--bg)">
+        <div style="position:relative;background:#fff;border:2px solid rgba(0,0,0,.82);border-radius:12px 12px 12px 3px;padding:11px 15px;box-shadow:3px 3px 0 rgba(0,0,0,.65);display:inline-block;max-width:100%">
+          <div style="position:absolute;bottom:-9px;left:16px;border-left:6px solid transparent;border-right:6px solid transparent;border-top:9px solid rgba(0,0,0,.82)"></div>
+          <div style="position:absolute;bottom:-5px;left:19px;border-left:3px solid transparent;border-right:3px solid transparent;border-top:6px solid #fff;z-index:1"></div>
+          <div style="font-family:var(--font-d);font-style:italic;font-size:14px;color:var(--ink);line-height:1.5" id="repCallout">—</div>
+        </div>
+      </div>
+
+      <!-- POSTER FOOTER -->
+      <div style="background:var(--ink);padding:10px 16px;display:flex;align-items:center;justify-content:space-between">
+        <div style="font-family:var(--font-d);font-size:14px;font-weight:600;color:rgba(245,239,224,.7)">Ascend<em style="font-style:normal;color:#A8DFB0">.</em> &nbsp;<span style="font-family:var(--font-b);font-size:7px;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,239,224,.25)" id="posterDate">ascendmylife.com</span></div>
+        <button onclick="downloadPDF()" style="padding:8px 18px;background:var(--orange);color:#fff;border:1.5px solid rgba(255,255,255,.2);border-radius:2px;font-family:var(--font-b);font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:2px 2px 0 rgba(0,0,0,.4)">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v7M3 6l3 3 3-3M1 10h10" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Download poster
+        </button>
+      </div>
+
+      <!-- hidden carriers -->
+      <div id="repShadow" style="display:none"></div>
+      <div id="repHearts" style="display:none"></div>
+      <div id="repFin" style="display:none"></div>
+      <svg id="repWheel" viewBox="0 0 440 440" style="display:none"></svg>
+      <div id="lockedCount" style="display:none">8</div>
+
+    </div>
+  </div>
+
+  <!-- FOOTER CTA STRIP — always visible, dark, same content as float bubble -->
+  <div style="
+    width:100%;
+    background:var(--ink);
+    border:2px solid rgba(0,0,0,.82);
+    border-radius:2px;
+    box-shadow:4px 4px 0 rgba(0,0,0,.75);
+    padding:20px 24px;
+    margin:20px 0 50px;
+    display:flex;align-items:center;justify-content:space-between;
+    gap:20px;flex-wrap:wrap;
+  ">
+    <!-- left: text -->
+    <div style="flex:1;min-width:220px">
+      <div style="font-family:var(--font-b);font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:rgba(245,239,224,.4);margin-bottom:6px">Jouw blueprint · gedeeltelijk</div>
+      <div style="font-family:var(--font-d);font-size:22px;font-weight:600;color:#fff;letter-spacing:-.02em;line-height:1.2;margin-bottom:4px">
+        <span id="lockedCountBubble">8</span> domeinen nog verborgen.
+      </div>
+      <div style="font-family:var(--font-b);font-size:9px;color:rgba(245,239,224,.45);line-height:1.6">
+        Life Wheel &nbsp;·&nbsp; Shadow Layer &nbsp;·&nbsp; Archetype profiel &nbsp;·&nbsp; Systemen op maat<br>
+        <span style="color:var(--green);font-weight:700">✓ Gratis &nbsp;·&nbsp; ✓ Geen creditcard &nbsp;·&nbsp; ✓ Cancel altijd</span>
+      </div>
+    </div>
+
+    <!-- right: actions -->
+    <div style="display:flex;flex-direction:column;gap:8px;flex-shrink:0;min-width:260px">
+      <button onclick="doSocial('google')" style="
+        width:100%;padding:12px;
+        background:var(--green);color:#fff;
+        border:2px solid rgba(255,255,255,.15);border-radius:2px;
+        box-shadow:3px 3px 0 rgba(0,0,0,.5);
+        font-family:var(--font-b);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+        cursor:pointer;animation:heartbeat 2.4s ease-in-out infinite;
+      ">G &nbsp; Doorgaan met Google →</button>
+
+      <div style="display:flex;gap:6px">
+        <input id="gateEmail" type="email" placeholder="of jouw@email.com"
+          style="flex:1;padding:9px 12px;font-family:var(--font-b);font-size:11px;color:var(--ink);background:var(--bg);border:1.5px solid rgba(255,255,255,.2);border-radius:2px;outline:none">
+        <button onclick="doSubmit()" style="padding:9px 14px;background:rgba(255,255,255,.12);color:rgba(245,239,224,.8);border:1.5px solid rgba(255,255,255,.2);border-radius:2px;font-family:var(--font-b);font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap">→</button>
+      </div>
+
+      <div style="display:flex;gap:5px">
+        <a href="#" onclick="doShareWA(event)" style="flex:1;padding:7px 4px;background:#25D366;border:1.5px solid rgba(0,0,0,.3);border-radius:2px;font-family:var(--font-b);font-size:7px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#fff;text-align:center;text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:1px;cursor:pointer"><span style="font-size:12px">💬</span>WA</a>
+        <a href="#" onclick="doShareTW(event)" style="flex:1;padding:7px 4px;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.15);border-radius:2px;font-family:var(--font-b);font-size:7px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(245,239,224,.8);text-align:center;text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:1px;cursor:pointer"><span style="font-size:12px">𝕏</span>TW</a>
+        <button onclick="doCopy(this)" style="flex:1;padding:7px 4px;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.15);border-radius:2px;font-family:var(--font-b);font-size:7px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(245,239,224,.8);display:flex;flex-direction:column;align-items:center;gap:1px;cursor:pointer"><span id="copyIcon" style="font-size:12px">🔗</span>Copy</button>
+        <button onclick="downloadPDF()" style="flex:1;padding:7px 4px;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.15);border-radius:2px;font-family:var(--font-b);font-size:7px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:rgba(245,239,224,.8);display:flex;flex-direction:column;align-items:center;gap:1px;cursor:pointer"><span style="font-size:12px">⬇</span>PDF</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+/* ══ THREE.JS PARTICLES ══ */
+var THREE_INIT = false, threeRenderer, threeScene, threeCamera, threeParticles
+
+function startThree() {
+  if (THREE_INIT) return
+  THREE_INIT = true
+  var canvas = document.getElementById('threeCanvas')
+  threeRenderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true })
+  threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  threeRenderer.setSize(window.innerWidth, window.innerHeight)
+  threeScene = new THREE.Scene()
+  threeCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000)
+  threeCamera.position.z = 6
+  var geo = new THREE.BufferGeometry()
+  var N = 400, pos = new Float32Array(N*3), vel = new Float32Array(N*3)
+  for (var i=0;i<N;i++) {
+    pos[i*3]=(Math.random()-.5)*22; pos[i*3+1]=(Math.random()-.5)*16; pos[i*3+2]=(Math.random()-.5)*8
+    vel[i*3]=(Math.random()-.5)*.006; vel[i*3+1]=-.015-Math.random()*.025; vel[i*3+2]=0
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(pos,3))
+  geo.userData.vel = vel
+  var mat = new THREE.PointsMaterial({ size:.07, color:0xC4722A, transparent:true, opacity:.65 })
+  threeParticles = new THREE.Points(geo, mat)
+  threeScene.add(threeParticles)
+  window.addEventListener('resize', function(){
+    threeCamera.aspect = window.innerWidth/window.innerHeight
+    threeCamera.updateProjectionMatrix()
+    threeRenderer.setSize(window.innerWidth, window.innerHeight)
+  })
+  ;(function loop(){
+    requestAnimationFrame(loop)
+    var p=threeParticles.geometry.attributes.position.array
+    var v=threeParticles.geometry.userData.vel
+    for(var i=0;i<N;i++){
+      p[i*3]+=v[i*3]; p[i*3+1]+=v[i*3+1]
+      if(p[i*3+1]<-9){p[i*3+1]=9;p[i*3]=(Math.random()-.5)*22}
+    }
+    threeParticles.geometry.attributes.position.needsUpdate=true
+    threeParticles.rotation.z+=.0004
+    threeRenderer.render(threeScene, threeCamera)
+  })()
+  document.getElementById('threeCanvas').classList.add('show')
+}
+
+/* ══ STATE ══ */
+var wastedHrs = 2, hourlyRate = 35
+var userName = '', userAge = ''
+var stressSel = [], shadowPick = null, heartSel = []
+
+/* ══ SCREEN SYSTEM ══ */
+var PROGS = { s1:8, s2:30, s3:50, s4:65, s5:80, s5b:90, s6:100 }
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active') })
+  document.getElementById(id).classList.add('active')
+  document.getElementById('progFill').style.width = PROGS[id] + '%'
+  window.scrollTo(0, 0)
+  // hide float bubble unless on s6
+  var fb = document.getElementById('floatCTA')
+  if (fb) fb.style.display = (id === 's6') ? fb.style.display : 'none'
+  var gh = document.getElementById('domGhost')
+  if (gh && id !== 's6') gh.remove()
+  var sh = document.getElementById('scrollHint')
+  if (sh) sh.style.display = 'none'
+  // Re-trigger animations
+  var el = document.getElementById(id)
+  el.querySelectorAll('.fu').forEach(function(c){ c.style.animation='none'; setTimeout(function(){ c.style.animation='' },10) })
+}
+
+/* ══ CALCULATOR ══ */
+function calcUpdate(h, r) {
+  wastedHrs = parseFloat(h)
+  hourlyRate = parseFloat(r)
+  var day = wastedHrs * hourlyRate
+  var year = day * 365
+  var c5 = year * ((Math.pow(1.07,5)-1)/0.07)
+  document.getElementById('rDay').textContent = '€' + Math.round(day).toLocaleString('nl')
+  document.getElementById('rYear').textContent = '€' + (year>=1000 ? Math.round(year/1000)+'k' : Math.round(year))
+  document.getElementById('r5yr').textContent = '€' + Math.round(c5/1000) + 'k'
+  var bigEl = document.getElementById('bigCompound')
+  if (bigEl) {
+    var c5int = Math.round(c5)
+    // Format with dots: 141000 → 141.000
+    bigEl.textContent = '€ ' + c5int.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+  }
+  drawChart()
+  updateBubble(day, year, c5)
+}
+
+var lastH = '2', lastR = '35'
+function onHChange(v) {
+  lastH = v
+  var val = parseFloat(v)
+  document.getElementById('dHval').textContent = val % 1 === 0 ? val : val.toFixed(1)
+  calcUpdate(v, lastR)
+}
+function onRChange(v) {
+  lastR = v
+  document.getElementById('dRval').textContent = Math.round(v)
+  calcUpdate(lastH, v)
+}
+
+function drawChart() {
+  var canvas = document.getElementById('chartC')
+  var box = document.getElementById('chartBox')
+  if (!box) return
+
+  // CSS size
+  var cssW = box.clientWidth - 28
+  var cssH = Math.max(200, box.clientHeight - 28)
+  if (cssW <= 0) return
+
+  // HiDPI — sharp pixels
+  var dpr = window.devicePixelRatio || 1
+  canvas.width  = Math.round(cssW * dpr)
+  canvas.height = Math.round(cssH * dpr)
+  canvas.style.width  = cssW + 'px'
+  canvas.style.height = cssH + 'px'
+
+  var ctx = canvas.getContext('2d')
+  ctx.scale(dpr, dpr)
+  ctx.clearRect(0, 0, cssW, cssH)
+
+  var W = cssW, H = cssH
+
+  var yr = parseFloat(lastH) * parseFloat(lastR) * 365
+  var data = []
+  for (var i=0;i<=10;i++) data.push(yr * ((Math.pow(1.07,i)-1)/0.07))
+  var mx = data[10]
+  if (mx <= 0) return
+
+  // generous padding so nothing clips
+  var pL=52, pR=48, pT=24, pB=36
+  var cW=W-pL-pR, cH=H-pT-pB
+  if (cW <= 0 || cH <= 0) return
+
+  // Grid lines + Y labels
+  ctx.strokeStyle='rgba(245,239,224,0.12)'; ctx.lineWidth=1
+  for (var i=0;i<=4;i++) {
+    var gy = pT + cH - (i/4)*cH
+    ctx.beginPath();ctx.moveTo(pL,gy);ctx.lineTo(W-pR,gy);ctx.stroke()
+    var lv = mx*i/4
+    var lbl = lv>=1000 ? '€'+Math.round(lv/1000)+'k' : '€'+Math.round(lv)
+    ctx.fillStyle='rgba(245,239,224,0.9)'
+    ctx.font='bold 11px DM Mono, monospace'
+    ctx.textAlign='right'
+    ctx.fillText(lbl, pL-6, gy+4)
+  }
+
+  // Area fill
+  ctx.beginPath()
+  ctx.moveTo(pL, pT+cH)
+  for (var i=0;i<=10;i++) {
+    var x = pL+(i/10)*cW
+    var y = pT+cH-(data[i]/mx)*cH
+    ctx.lineTo(x, y)
+  }
+  ctx.lineTo(pL+cW, pT+cH)
+  ctx.closePath()
+  var grd = ctx.createLinearGradient(0,pT,0,pT+cH)
+  grd.addColorStop(0,'rgba(196,114,42,.5)')
+  grd.addColorStop(1,'rgba(196,114,42,.04)')
+  ctx.fillStyle=grd; ctx.fill()
+
+  // Line
+  ctx.beginPath()
+  ctx.moveTo(pL, pT+cH-(data[0]/mx)*cH)
+  for (var i=1;i<=10;i++) {
+    ctx.lineTo(pL+(i/10)*cW, pT+cH-(data[i]/mx)*cH)
+  }
+  ctx.strokeStyle='#C4722A'; ctx.lineWidth=2.5; ctx.lineJoin='round'; ctx.stroke()
+
+  // End dot
+  var ex = pL+cW
+  var ey = pT+cH-(data[10]/mx)*cH
+  ctx.beginPath(); ctx.arc(ex,ey,6,0,Math.PI*2)
+  ctx.fillStyle='#FFB84A'; ctx.fill()
+  ctx.strokeStyle='#C4722A'; ctx.lineWidth=2; ctx.stroke()
+
+  // "← jij" label — links van het punt zodat het niet afknipt
+  // no jij label
+
+  // X labels
+  ctx.fillStyle='rgba(245,239,224,0.85)'
+  ctx.font='11px DM Mono, monospace'
+  ctx.textAlign='center'
+  for (var i=0;i<=10;i+=2) {
+    var lx = pL+(i/10)*cW
+    ctx.fillText(i===0?'Nu':i+'jr', lx, pT+cH+22)
+  }
+}
+
+var BUBBLES = [
+  function(d,y,c5){ return 'Dit is puur <strong>geld</strong>. De gemiste kansen, de onbenutte energie, de relaties — tellen nog niet eens mee.' },
+  function(d,y,c5){ return 'In 5 jaar had dit <strong>€'+Math.round(c5/1000)+'k</strong> kunnen zijn. Gecompound. Zonder extra werk.' },
+  function(d,y,c5){ return 'Elke dag opnieuw: <strong>€'+Math.round(d)+'</strong> verdwijnt. Niet één keer — structureel.' }
+]
+var bubbleIdx = 0
+function updateBubble(d,y,c5) {
+  var fn = BUBBLES[bubbleIdx % BUBBLES.length]
+  document.getElementById('bubbleTxt').innerHTML = fn(d,y,c5)
+  bubbleIdx++
+}
+
+function goS2() {
+  showScreen('s2')
+  startThree()
+  document.getElementById('nameInput').focus()
+}
+
+/* ══ NAAM + LEEFTIJD ══ */
+var nameInput = document.getElementById('nameInput')
+nameInput.addEventListener('input', function(){ checkS2() })
+nameInput.addEventListener('keydown', function(e){ if(e.key==='Enter') goS3() })
+
+/* Build age wheel items */
+;(function(){
+  var track = document.getElementById('ageWheelTrack')
+  var items = document.getElementById('ageWheelItems')
+  // hide scrollbar webkit
+  var style = document.createElement('style')
+  style.textContent = '#ageWheelTrack::-webkit-scrollbar{display:none}'
+  document.head.appendChild(style)
+
+  var ages = []
+  for (var i = 16; i <= 75; i++) ages.push(i)
+
+  ages.forEach(function(age) {
+    var div = document.createElement('div')
+    div.style.cssText = 'height:44px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center;cursor:pointer;font-family:var(--font-d);font-size:26px;font-weight:600;letter-spacing:-.02em;color:var(--ink2);transition:color .15s,font-size .15s'
+    div.textContent = age
+    div.dataset.age = age
+    items.appendChild(div)
+  })
+
+  // Scroll listener — highlight only, NO auto-snap
+  track.addEventListener('scroll', function() {
+    updateCenter()
+  })
+
+  function updateCenter() {
+    var center = track.scrollTop + 110 // 88px padding + half item
+    var divs = items.children
+    var closest = 0, minDist = 9999
+    for (var i = 0; i < divs.length; i++) {
+      var itemCenter = divs[i].offsetTop + 22
+      var dist = Math.abs(itemCenter - center)
+      if (dist < minDist) { minDist = dist; closest = i }
+      // scale effect
+      var scale = Math.max(0, 1 - dist / 120)
+      divs[i].style.fontSize = (20 + scale * 10) + 'px'
+      divs[i].style.color = dist < 30 ? 'var(--ink)' : dist < 80 ? 'var(--ink2)' : 'var(--ink3)'
+      divs[i].style.fontWeight = dist < 30 ? '600' : '400'
+    }
+    if (minDist < 30) {
+      userAge = divs[closest].dataset.age
+      document.getElementById('ageDisplay').textContent = userAge + ' jaar'
+      document.getElementById('ageDisplay').style.color = 'var(--ink)'
+      checkS2()
+    }
+  }
+
+
+
+  // Click to pick
+  items.addEventListener('click', function(e) {
+    var t = e.target
+    if (t.dataset.age) {
+      userAge = t.dataset.age
+      document.getElementById('ageDisplay').textContent = userAge + ' jaar'
+      document.getElementById('ageDisplay').style.color = 'var(--ink)'
+      toggleAgePicker()
+      checkS2()
+    }
+  })
+
+  // Position wheel at 35 silently — no auto-select, no running
+  // Only runs when picker actually opens
+  function positionAt35() {
+    var divs = items.children
+    var idx = 35 - 16
+    if (divs[idx]) {
+      // just position, no forced font changes — user drags freely
+      track.scrollTop = divs[idx].offsetTop - 88 + 22
+      updateCenter()
+    }
+  }
+
+  // expose positionAt35 so toggleAgePicker can call it
+  window._positionAt35 = positionAt35
+})()
+
+function selectAge(el) {
+  // legacy — not used
+}
+
+function checkS2() {
+  var ok = nameInput.value.trim().length >= 2 && userAge !== ''
+  document.getElementById('btnS2').classList.toggle('disabled', !ok)
+}
+
+var agePickerOpen = false
+function toggleAgePicker() {
+  agePickerOpen = !agePickerOpen
+  var picker = document.getElementById('agePicker')
+  var arrow = document.getElementById('ageArrow')
+  picker.style.display = agePickerOpen ? 'block' : 'none'
+  arrow.style.transform = agePickerOpen ? 'rotate(180deg)' : 'rotate(0deg)'
+  if (agePickerOpen && window._positionAt35) setTimeout(window._positionAt35, 10)
+}
+
+// Close picker when clicking outside
+document.addEventListener('click', function(e) {
+  if (agePickerOpen && !document.getElementById('agePicker').contains(e.target) && e.target.id !== 'agePickerBtn') {
+    toggleAgePicker()
+  }
+})
+
+function goS3() {
+  if (nameInput.value.trim().length < 2 || !userAge) return
+  userName = nameInput.value.trim()
+  document.getElementById('n3').textContent = userName
+  showScreen('s3')
+}
+
+/* ══ STRESS ══ */
+var STRESS_MSG = {
+  1: function(n){ return n+', slechte slaap is het eerste signaal dat je systemen niet kloppen. Niet jouw wilskracht — jouw architectuur.' },
+  2: function(n){ return 'Een hoofd dat niet stopt is een hoofd zonder systeem. Niet jouw schuld. Wel jouw verantwoordelijkheid.' },
+  3: function(n){ return 'De telefoon is niet het probleem. Het gebrek aan iets beters is het probleem.' },
+  4: function(n){ return n+', lage energie is geen karakter. Het is een ontwerp-probleem. En ontwerp-problemen zijn oplosbaar.' },
+  5: function(n){ return 'Numbness is een beschermingsmechanisme. Het verdwijnt zodra je begint te bewegen.' },
+  6: function(n){ return '"Geen tijd" is geen feit. Het is een prioriteitenkeuze die je onbewust steeds opnieuw maakt.' }
+}
+
+function toggleStress(el) {
+  el.classList.toggle('on')
+  var v = parseInt(el.dataset.v)
+  var idx = stressSel.indexOf(v)
+  if (idx===-1) stressSel.push(v)
+  else stressSel.splice(idx,1)
+  var resp = document.getElementById('stressResp')
+  if (stressSel.length > 0) {
+    resp.style.display = 'block'
+    var last = stressSel[stressSel.length-1]
+    var fn = STRESS_MSG[last]
+    document.getElementById('stressMsg').textContent = fn ? fn(userName) : 'Dit patroon kennen we. Het is oplosbaar.'
+  } else {
+    resp.style.display = 'none'
+  }
+}
+
+function goS4() { showScreen('s4') }
+function goS5() { showScreen('s5') }
+
+/* ══ SHADOW ══ */
+var SHADOW_DATA = {
+  '11drop':    { name:'The 11-Day Drop',    desc:'Jij begint sterk. Dan dooft het voor het systeem verankerd is. Niet wilskracht — architectuur.' },
+  'qualifier': { name:'The Qualifier',      desc:'"Als ik eerst X..." — het perfecte moment bestaat niet en zal er nooit komen.' },
+  'sunday':    { name:'Sunday Reset Illusion', desc:'Zondag plan je perfect. Maandag verandert er weinig. Planning is comfortabel. Actie is eng.' },
+  'saboteur':  { name:'The Success Saboteur', desc:'Succes triggert een onveilig gevoel. Dit is het meest verborgen — en krachtigste — patroon.' }
+}
+
+function pickShadow(el) {
+  document.querySelectorAll('.opt-item').forEach(function(o){ o.classList.remove('on') })
+  el.classList.add('on')
+  shadowPick = el.dataset.s || el.dataset.shadow
+  setTimeout(function(){ showScreen('s5') }, 500)
+}
+
+/* ══ HART ══ */
+function toggleHeart(el) {
+  el.classList.toggle('on')
+  var d = el.dataset.d
+  var c = el.dataset.c
+  if (el.classList.contains('on')) {
+    el.style.background = c
+    el.style.borderColor = 'rgba(0,0,0,.82)'
+    el.querySelector('.h-lbl').style.color = '#fff'
+    heartSel.push(d)
+  } else {
+    el.style.background = ''
+    el.style.borderColor = ''
+    el.querySelector('.h-lbl').style.color = ''
+    heartSel = heartSel.filter(function(x){ return x!==d })
+  }
+  var btn = document.getElementById('btnHeart')
+  btn.classList.toggle('disabled', heartSel.length < 2)
+}
+
+function goS6() {
+  buildReport()
+  buildMiniDomGrid()
+  buildReportDomGrid()
+  showScreen('s6')
+  document.body.style.background = '#E8DFC8'
+  // Show scroll hint after ghost animation completes
+  setTimeout(function() {
+    var sh = document.getElementById('scrollHint')
+    if (sh) sh.style.display = 'block'
+  }, 2000)
+}
+
+/* ══ TASTE-IT DOMAIN DATA ══ */
+var TASTE_DOMAINS = [
+  {n:'Finance',col:'#C4722A',pastel:'#F2C99A',icon:'💰',
+   aff:'"I am becoming the person who never has to worry about money again."',
+   daily:['Check app · 30sec','One money decision: deferred'],
+   outcome:'If I hold this system: €4,200 invested this year.'},
+  {n:'Body',col:'#2a8a3a',pastel:'#A8DFB0',icon:'💪',
+   aff:'"I wake up proud of what I am doing with this one body I have."',
+   daily:['Morning light · 5min','Move intentionally'],
+   outcome:'156 sessions. Heart rate measurably lower by month 3.'},
+  {n:'Mind',col:'#2a5acc',pastel:'#AABFF5',icon:'🧠',
+   aff:'"I feel clear, focused, and fully alive in my own thoughts."',
+   daily:['10min journal · 07:15','Phone off until 08:00'],
+   outcome:'365 entries. 730 protected deep work hours.'},
+  {n:'Spirit',col:'#4a6741',pastel:'#B8D4A8',icon:'🌿',
+   aff:'"I feel at peace — even on the hardest days."',
+   daily:['5min stillness','No input first 10min'],
+   outcome:'Sense of meaning 4× higher at 90 days.'},
+  {n:'Relations',col:'#8a4a2a',pastel:'#E8C4A0',icon:'❤️',
+   aff:'"The people I love know it — because I show up."',
+   daily:['Present with people','One kind act'],
+   outcome:'48 quality moments with loved ones this year.'},
+  {n:'Career',col:'#2a6a4a',pastel:'#90DFC4',icon:'🚀',
+   aff:'"I go to bed knowing today I moved something important forward."',
+   daily:['Deep work 09:00–11:00','One priority only'],
+   outcome:'520 protected hours. First opportunity opens.'},
+  {n:'Environment',col:'#6a6a2a',pastel:'#DDDD88',icon:'🏠',
+   aff:'"I feel calm the moment I walk through my door."',
+   daily:['Clear desk before end','Nothing left unplaced'],
+   outcome:'Calm becomes your default state.'},
+  {n:'Creativity',col:'#8a3a1a',pastel:'#F5B090',icon:'🎨',
+   aff:'"I make things that did not exist before. That feeling never gets old."',
+   daily:['30min creative block','No input during this time'],
+   outcome:'One finished project per quarter.'},
+  {n:'Identity',col:'#3a2a8a',pastel:'#BAA8FF',icon:'🧭',
+   aff:'"I make decisions from my values, not from fear."',
+   daily:['One value-aligned choice','Boundary held if needed'],
+   outcome:'Decisions get faster. Regret gets rarer.'},
+  {n:'Time',col:'#1a4a8a',pastel:'#88B8FF',icon:'⏳',
+   aff:'"I spend my hours on what matters. I will not trade them cheaply."',
+   daily:['Morning blocked · no calls','End of day review done'],
+   outcome:'4 hours recovered weekly. 200 hours per year.'},
+  {n:'Health',col:'#1a6a2a',pastel:'#90E0A0',icon:'⚡',
+   aff:'"I have so much energy I forget what tired used to feel like."',
+   daily:['Sleep by 22:30','No screens after 21:30'],
+   outcome:'Energy scores up 60% in the first month.'},
+  {n:'Impact',col:'#1a5a5a',pastel:'#88DDDD',icon:'🌊',
+   aff:'"I know that what I do today will matter to someone I may never meet."',
+   daily:['Notice one ripple','Act from values not fear'],
+   outcome:'52 intentional acts. Legacy built one step at a time.'}
+]
+
+var tasteDomain = null
+var photosBefore = null, photosAfter = null
+
+function goS5b() {
+  showScreen('s5b')
+  buildTasteGrid()
+}
+
+function buildTasteGrid() {
+  var grid = document.getElementById('tasteDomGrid')
+  if (!grid || grid.children.length > 0) return
+  TASTE_DOMAINS.forEach(function(d, i) {
+    var div = document.createElement('div')
+    div.style.cssText = 'padding:10px 6px;background:var(--bg2);border:2px solid rgba(0,0,0,.82);border-radius:2px;box-shadow:2px 2px 0 rgba(0,0,0,.55);cursor:pointer;transition:all .15s;text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px'
+    div.innerHTML = '<span style="font-size:18px">' + d.icon + '</span><span style="font-size:7.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)">' + d.n + '</span>'
+    div.onclick = (function(dom, el) { return function() { selectTasteDomain(dom, el) } })(d, div)
+    div.addEventListener('mouseover', function() { this.style.transform='translate(-1px,-1px)'; this.style.boxShadow='3px 3px 0 rgba(0,0,0,.7)' })
+    div.addEventListener('mouseout', function() { if (!this.classList.contains('on')) { this.style.transform=''; this.style.boxShadow='2px 2px 0 rgba(0,0,0,.55)' } })
+    grid.appendChild(div)
+  })
+}
+
+function selectTasteDomain(d, el) {
+  tasteDomain = d
+  document.querySelectorAll('#tasteDomGrid > div').forEach(function(c) {
+    c.style.background = ''; c.style.color = ''; c.classList.remove('on')
+    c.querySelector('span:last-child').style.color = ''
+  })
+  el.style.background = d.col
+  el.style.borderColor = 'rgba(0,0,0,.82)'
+  el.querySelector('span:last-child').style.color = '#fff'
+  el.classList.add('on')
+  el.style.transform = 'translate(-1px,-1px)'
+  el.style.boxShadow = '3px 3px 0 rgba(0,0,0,.7)'
+
+  // Show upload zone
+  document.getElementById('tasteUpload').style.display = 'block'
+
+  // Update mini card
+  document.getElementById('tcDomName').textContent = d.n.toUpperCase()
+  document.getElementById('tcDomName').style.color = d.col
+  document.getElementById('tcScore').textContent = '?/10'
+  document.getElementById('tcScore').style.color = d.col
+  document.getElementById('tcAff').textContent = d.aff
+  var checks = document.getElementById('tcChecks')
+  checks.innerHTML = ''
+  d.daily.forEach(function(c) {
+    var row = document.createElement('div')
+    row.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:10px;color:var(--ink2)'
+    row.innerHTML = '<div style="width:10px;height:10px;border:1.5px solid rgba(0,0,0,.5);border-radius:1px;flex-shrink:0;background:#fff"></div>' + c
+    checks.appendChild(row)
+  })
+  document.getElementById('tcOutcome').textContent = d.outcome
+  document.getElementById('tasteMiniCard').style.display = 'block'
+  document.getElementById('btnTaste').style.display = 'flex'
+}
+
+function triggerUpload(side) {
+  document.getElementById(side === 'before' ? 'fileBefore' : 'fileAfter').click()
+}
+
+function loadPhoto(side, input) {
+  if (!input.files || !input.files[0]) return
+  var reader = new FileReader()
+  reader.onload = function(e) {
+    var src = e.target.result
+    if (side === 'before') {
+      photosBefore = src
+      var img = document.getElementById('prevBefore')
+      img.src = src; img.style.display = 'block'
+      document.getElementById('lblBefore').style.display = 'none'
+      // mirror to mini card
+      var tc = document.getElementById('tcImgBefore')
+      tc.src = src; tc.style.display = 'block'
+    } else {
+      photosAfter = src
+      var img = document.getElementById('prevAfter')
+      img.src = src; img.style.display = 'block'
+      document.getElementById('lblAfter').style.display = 'none'
+      var tc = document.getElementById('tcImgAfter')
+      tc.src = src; tc.style.display = 'block'
+    }
+  }
+  reader.readAsDataURL(input.files[0])
+}
+
+/* ══ ARCHETYPES ══ */
+function buildMiniDomGrid() {
+  var grid = document.getElementById('miniDomGrid')
+  if (!grid) return
+  grid.innerHTML = ''
+  TASTE_DOMAINS.forEach(function(d, i) {
+    var locked = i >= 3
+    var card = document.createElement('div')
+    card.style.cssText = 'border:1.5px solid rgba(0,0,0,' + (locked?'.15':'.5') + ');border-radius:2px;background:var(--bg2);padding:5px 4px;position:relative;overflow:hidden;' + (locked?'filter:blur(3px);opacity:.4':'')
+    var sc = locked ? '?' : (Math.floor(Math.random()*4)+4)
+    card.innerHTML = '<div style="font-size:6.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:' + (locked?'var(--ink3)':d.col) + ';margin-bottom:2px">' + d.n + '</div>'
+      + '<div style="font-family:var(--font-d);font-size:14px;font-weight:600;color:' + (locked?'var(--ink3)':d.col) + ';line-height:1">' + sc + '</div>'
+      + '<div style="height:3px;background:var(--bg3);border:1px solid rgba(0,0,0,.2);overflow:hidden;margin-top:3px"><div style="height:100%;width:' + (locked?'0':Math.round(sc/10*100)) + '%;background:' + d.pastel + '"></div></div>'
+      + (locked ? '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:10px">🔒</div>' : '')
+    grid.appendChild(card)
+  })
+
+  // Set poster meta
+  var now = new Date()
+  var months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Aug','Sep','Okt','Nov','Dec']
+  var pm=document.getElementById('posterMeta'); if(pm) pm.textContent = userName + ' · ' + months[now.getMonth()] + ' ' + now.getFullYear()
+  var pd=document.getElementById('posterDate'); if(pd) pd.textContent = 'ascendmylife.com · ' + now.getFullYear()
+}
+
+function downloadPoster() {
+  // Simple: open print dialog with poster only
+  alert('Tip: gebruik Ctrl+P (Cmd+P op Mac) en kies "Opslaan als PDF" voor een download.')
+}
+
+var ARCHES = [
+  {min:0, max:3.5, name:'The Sleeper', col:'#5A42B0', truth:'Je leeft een leven dat je overkomt. Nog niet gekozen. Dat verandert vandaag.'},
+  {min:3.5,max:5.5,name:'The Sprinter',col:'#3DBF8A',truth:'Snelle start, heldere vlam, korte brand. De systemen ontbreken nog.'},
+  {min:5.5,max:7.5,name:'The Builder', col:'#C8902A',truth:'Jij maakt echte dingen. Meet vooruitgang in resultaten. Klaar voor het volgende niveau.'},
+  {min:7.5,max:10, name:'The Architect',col:'#A06820',truth:'Jij bouwt het leven — één systeem tegelijk. De compound curve werkt voor jou.'}
+]
+
+/* ══ REPORT ══ */
+function buildReport() {
+  // null-safe helpers
+  function set(id, val) { var e=document.getElementById(id); if(e) e.textContent=val }
+  function setH(id, val) { var e=document.getElementById(id); if(e) e.innerHTML=val }
+  function setC(id, val) { var e=document.getElementById(id); if(e) e.style.color=val }
+
+  // Wake-up score
+  var stressPenalty = stressSel.length * 1.2
+  var wakeScore = Math.max(1.5, Math.min(9.5, 8 - stressPenalty)).toFixed(1)
+
+  // Animate score
+  var el = document.getElementById('repScore')
+  if (el) {
+    var target = parseFloat(wakeScore), t0 = null
+    ;(function anim(ts){
+      if (!t0) t0=ts
+      var p = Math.min(1,(ts-t0)/1000), e=1-Math.pow(1-p,3)
+      el.textContent = (e*target).toFixed(1)
+      if (p<1) requestAnimationFrame(anim)
+      else el.textContent = wakeScore
+    })(performance.now())
+  }
+
+  // Archetype
+  var arch = ARCHES[0]
+  for (var i=0;i<ARCHES.length;i++) if (parseFloat(wakeScore)>=ARCHES[i].min) arch=ARCHES[i]
+  set('repArch', arch.name); setC('repArch', arch.col)
+  set('repTruth', arch.truth)
+  set('posterScore', wakeScore)
+  set('posterArch', arch.name); setC('posterArch', arch.col)
+
+  // Financial
+  var yr = wastedHrs * hourlyRate * 365
+  var c5 = yr * ((Math.pow(1.07,5)-1)/0.07)
+  setH('repFin',
+    '<strong>' + userName + ', jij gooit €' + Math.round(yr).toLocaleString('nl') + ' per jaar weg.</strong> ' +
+    'In 5 jaar gecompound: <strong>€' + Math.round(c5/1000) + 'k</strong> die nooit gecreëerd werd. ' +
+    'Dit is alleen Finance. Er zijn 11 andere domeinen.')
+
+  // Shadow
+  var sd = shadowPick ? SHADOW_DATA[shadowPick] : null
+  set('repShadow', sd ? sd.name + ' — ' + sd.desc : 'Volledig profiel onthult dit.')
+  set('shadowName', sd ? sd.name : 'Wordt zichtbaar in volledig profiel')
+  set('shadowDesc', sd ? sd.desc : 'De volledige 12-vraag assessment onthult jouw diepste patroon.')
+  // Shadow checks
+  var sc = document.getElementById('shadowChecks')
+  if (sc) {
+    var checks = sd ? [
+      'Schrijf op wanneer dit patroon voor het laatst speelde',
+      'Benoem het hardop aan iemand die je vertrouwt',
+      'Start één ding voordat het perfect aanvoelt'
+    ] : ['Volledige shadow assessment in het volledig profiel']
+    sc.innerHTML = checks.map(function(c) {
+      return '<div style="display:flex;align-items:flex-start;gap:6px"><div style="width:10px;height:10px;border:1.5px solid rgba(255,255,255,.3);border-radius:1px;flex-shrink:0;margin-top:2px"></div><div style="font-family:var(--font-b);font-size:9px;color:rgba(245,239,224,.6);line-height:1.4">'+c+'</div></div>'
+    }).join('')
+  }
+  // Score bar width
+  var sb = document.getElementById('scoreBar')
+  if (sb) sb.style.width = (parseFloat(wakeScore)/10*100) + '%'
+
+  // Hearts
+  set('repHearts', heartSel.join(' · '))
+
+  // Callout
+  var callouts = [
+    '"' + userName + ', de gap tussen wie je nu bent en wie je kunt zijn is kleiner dan je denkt. Maar hij overbrugt zichzelf niet."',
+    '"Je weet al wat er mis is. Je hebt een systeem nodig dat het voor je oplost."',
+    '"Dit rapport is 3 minuten. Het volledige profiel is 5 minuten meer. Daarna verandert er iets."'
+  ]
+  setH('repCallout', callouts[Math.floor(Math.random()*callouts.length)])
+  set('s6eye', userName + ' · Wake-Up Report · Ascend')
+
+  // Wheel
+  drawWheel(parseFloat(wakeScore))
+  // Build domain grid for report
+  buildReportDomGrid()
+}
+
+function buildReportDomGrid() {
+  var grid = document.getElementById('reportDomGrid')
+  if (!grid) return
+  grid.innerHTML = ''
+
+  // Map heartSel to domain names
+  var HEART_TO_DOM = {
+    'Vrijheid':'Finance','Energie':'Body','Groei':'Mind','Rust':'Spirit',
+    'Gezin':'Relations','Liefde':'Relations','Carrière':'Career',
+    'Gezondheid':'Health','Creativiteit':'Creativity','Impact':'Impact','Avontuur':'Time'
+  }
+  var unlocked = []
+  heartSel.forEach(function(h) {
+    var d = HEART_TO_DOM[h]
+    if (d && unlocked.indexOf(d) === -1) unlocked.push(d)
+  })
+  // Always show at least Finance, Body, Mind if nothing matches
+  if (unlocked.length === 0) unlocked = ['Finance','Body','Mind']
+  // Cap at 4 visible
+  if (unlocked.length > 4) unlocked = unlocked.slice(0,4)
+
+  var lockedCount = 12 - unlocked.length
+  var el = document.getElementById('lockedCount')
+  if (el) el.textContent = lockedCount
+  var el2 = document.getElementById('lockedCountBubble')
+  if (el2) el2.textContent = lockedCount
+  var el3 = document.getElementById('unlockedCountText')
+  if (el3) el3.textContent = unlocked.length
+
+  var POSTER_DOMAINS = [
+    {n:'Finance',col:'#C4722A',pastel:'#F2C99A',sc:4,
+     aff:'"I am becoming the person who never has to worry about money again."',
+     daily:['Check app · 30sec','One money decision: deferred'],
+     weekly:['Review auto-invest active','Check spending vs plan'],
+     monthly:['Statement reviewed','Goal progress noted'],
+     outcome:'€4,200 invested this year. Compound interest begins.'},
+    {n:'Body',col:'#2a8a3a',pastel:'#A8DFB0',sc:6,
+     aff:'"I wake up proud of what I am doing with this one body I have."',
+     daily:['Morning light · 5min','Move intentionally'],
+     weekly:['3 sessions completed','Sleep avg checked'],
+     monthly:['Progress photo taken','Energy score reviewed'],
+     outcome:'156 sessions. Heart rate measurably lower by month 3.'},
+    {n:'Mind',col:'#2a5acc',pastel:'#AABFF5',sc:5,
+     aff:'"I feel clear, focused, and fully alive in my own thoughts."',
+     daily:['10min journal · 07:15','Phone off until 08:00'],
+     weekly:['One intention reviewed','Deep work hours counted'],
+     monthly:['Journal re-read','Pattern noticed'],
+     outcome:'365 entries. 730 protected deep work hours.'},
+    {n:'Spirit',col:'#4a6741',pastel:'#B8D4A8',sc:3,
+     aff:'"I feel at peace — even on the hardest days."',
+     daily:['5min stillness','No input first 10min'],
+     weekly:['Gratitude entry written','Presence score noted'],
+     monthly:['Meaning reflection done','Practice reviewed'],
+     outcome:'Sense of meaning 4× higher at 90 days.'},
+    {n:'Relations',col:'#8a4a2a',pastel:'#E8C4A0',sc:5,
+     aff:'"The people I love know it — because I show up."',
+     daily:['Present with people','One kind act'],
+     weekly:['Check in with one person','Moment scheduled'],
+     monthly:['4 quality moments done','Loneliness score checked'],
+     outcome:'48 quality moments with loved ones this year.'},
+    {n:'Career',col:'#2a6a4a',pastel:'#90DFC4',sc:6,
+     aff:'"I go to bed knowing today I moved something important forward."',
+     daily:['Deep work 09:00–11:00','One priority only'],
+     weekly:['Progress on goal noted','No morning meetings held'],
+     monthly:['Career goal reviewed','Skill gap identified'],
+     outcome:'520 protected hours. First opportunity opens.'},
+    {n:'Environment',col:'#6a6a2a',pastel:'#DDDD88',sc:4,
+     aff:'"I feel calm the moment I walk through my door."',
+     daily:['Clear desk before end','Nothing left unplaced'],
+     weekly:['Sunday reset · 15min','Space intentionally set'],
+     monthly:['Deeper sort done','Sanctuary feeling checked'],
+     outcome:'Calm becomes your default state.'},
+    {n:'Creativity',col:'#8a3a1a',pastel:'#F5B090',sc:3,
+     aff:'"I make things that did not exist before."',
+     daily:['30min creative block','No input during this time'],
+     weekly:['Project progress noted','Shipped something'],
+     monthly:['Project finished or launched','Next idea chosen'],
+     outcome:'One finished project per quarter.'},
+    {n:'Identity',col:'#3a2a8a',pastel:'#BAA8FF',sc:4,
+     aff:'"I make decisions from my values, not from fear."',
+     daily:['One value-aligned choice','Boundary held if needed'],
+     weekly:['Values review · Sunday','Decisions audited'],
+     monthly:['Identity statement re-read','Growth acknowledged'],
+     outcome:'Decisions get faster. Regret gets rarer.'},
+    {n:'Time',col:'#1a4a8a',pastel:'#88B8FF',sc:3,
+     aff:'"I spend my hours on what matters."',
+     daily:['Morning blocked · no calls','End of day review done'],
+     weekly:['Week designed on Sunday','Priorities set in advance'],
+     monthly:['Time audit completed','200h/yr target tracked'],
+     outcome:'4 hours recovered weekly. 200 hours per year.'},
+    {n:'Health',col:'#1a6a2a',pastel:'#90E0A0',sc:5,
+     aff:'"I have so much energy I forget what tired used to feel like."',
+     daily:['Sleep by 22:30','No screens after 21:30'],
+     weekly:['HRV trend checked','Recovery score noted'],
+     monthly:['Health protocol reviewed','Energy baseline tracked'],
+     outcome:'Energy scores up 60% in the first month.'},
+    {n:'Impact',col:'#1a5a5a',pastel:'#88DDDD',sc:3,
+     aff:'"What I do today will matter to someone I may never meet."',
+     daily:['Notice one ripple','Act from values'],
+     weekly:['One contribution made','Impact reflection written'],
+     monthly:['Legacy vision reviewed','52 acts tracked'],
+     outcome:'52 intentional acts. Legacy built one step at a time.'}
+  ]
+
+  var h = ''
+  var firstUnlocked = true
+  POSTER_DOMAINS.forEach(function(d) {
+    var isUnlocked = unlocked.indexOf(d.n) !== -1
+    var isZoomed = isUnlocked && firstUnlocked
+    if (isUnlocked) firstUnlocked = false
+    var bw = Math.round(d.sc/10*100)
+    var blur = isUnlocked ? '' : 'filter:blur(4px);pointer-events:none;user-select:none;'
+    h += '<div style="border:1.5px solid rgba(0,0,0,'+(isUnlocked?'.55':'.2')+');border-radius:2px;background:#EDE4CC;overflow:visible;display:flex;flex-direction:column;position:relative;'+blur+'">'
+
+    // header
+    h += '<div style="padding:4px 5px;border-bottom:1px solid rgba(0,0,0,.18)">'
+    h += '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:3px">'
+    h += '<div style="font-family:var(--font-b);font-size:7px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:'+d.col+'">'+d.n+'</div>'
+    h += '<div style="font-family:var(--font-d);font-size:9px;font-weight:600;color:'+d.col+';background:rgba(0,0,0,.06);border:1px solid rgba(0,0,0,.15);border-radius:2px;padding:1px 4px">'+d.sc+'/10</div>'
+    h += '</div>'
+    h += '<div style="height:8px;background:var(--bg3);border:1.5px solid rgba(0,0,0,.55);border-radius:1px;box-shadow:2px 2px 0 rgba(0,0,0,.35);overflow:hidden">'
+    h += '<div style="width:'+bw+'%;height:100%;background:'+d.pastel+';position:relative">'
+    h += '<div style="position:absolute;inset:0;background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.28) 0,rgba(255,255,255,.28) 5px,transparent 5px,transparent 9px)"></div>'
+    h += '</div></div></div>'
+
+    // photos — use taste-it uploads for matching domain, SIL silhouette otherwise
+    var isTasteDomain = tasteDomain && tasteDomain.n === d.n
+    var beforeSrc = isTasteDomain && photosBefore ? photosBefore : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAcYAAADlCAYAAADJLVcFAAAWfk...'
+    var afterSrc  = isTasteDomain && photosAfter  ? photosAfter  : null
+
+    // Before photo
+    var beforeFilter = isTasteDomain && photosBefore ? 'grayscale(1) contrast(1.1)' : 'sepia(.5)'
+    var afterFilter  = isTasteDomain && photosAfter  ? 'grayscale(1) sepia(.35) contrast(1.15)' : 'sepia(.35) contrast(1.2) brightness(.9)'
+
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:3px;height:56px">'
+    h += '<div style="background:#DDD0B0;border:1.5px solid rgba(0,0,0,.4);border-radius:1px;position:relative;overflow:hidden">'
+    if (isTasteDomain && photosBefore) {
+      h += '<img src="'+photosBefore+'" style="width:100%;height:100%;object-fit:cover;filter:'+beforeFilter+'">'
+    } else {
+      h += '<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAcYAAADlCAYAAADJLVcFAAAWfklEQVR42u3dfZAVVXrH8R8bE7PZXWuzVdHNGtf8kdqNQNBhWEC0eBlLEFgWVkojRkEp1IXCChiibuRFC8VdEbBEgUKRUlArykspaqGCxYu6gIKIEscXlvcSRwLCUIKATP7oSxyGmXv77fQ5p/v7qTpVyszc7n7Oc+5zu2/3ORIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIKpWhACWdZL0M0k/klQnaSkhAQAUzaWSVko6KKmhmbZf0tRS0QQAINeWtlAMW2ovSGpD2AAAedNT0oGIRbFxm0gIAQB5cVmCgti4bSSUAADfXZjwTLFp20dIAQA+ez3Foniy7SSsAEzhcQ2YdLmk1wy99kpJ3QkxPNBZUl8FV0/Ol3RO6b33oKQTkt4t5fMaSZsIF5Bvzxs4W2zcbibEcFh7SW9LOhYhp5dL6krogPw6brgwfkaI4ajhCXP7eUII5E9Pw0XxZOtHqOGY6Snl9jZCacf3CAEMaZfRdroQajjkKkkjU3qt8yUtI6RAfjyb0Rkjc6vCJSZyfDRh5YwR+XBJRtv5llDDEa8Yet0RhBbwX7+MzhYbJM0n3HBAF8N5Ds4Y4bkHM9zWh4QbDhhm+PWvJMQURvhrjaRfZLi9tYQcDvi14ddvT4gB/4xWdpdPucQE15jO8yWEGPBHa0nvWCqKCwg/ClIYdxNiwA9zLBXEk62GLoAjjnJ1BCiuNpIesVwQGyTdQ1fAIR8ZzvdHCTHglm6S7pP0lgMFsUHSp3QJHPOM4Zy/iBADbrhXwdI4DY61lXQNHDPEcM7PIMSAPR0lPSDzK2MkaRvoJjiI7xiBnJksaZfDxZBVB+C6TYbz/mVCDGRjoifFkE/PcN1A8h7wW42kA54WxQZJF9KFcNB2gzn/EuEFzDF9B52pViepVtJCuhCOGiRuvgG80kbSVo/PEjukHA8WOYYJWwzk/uOEFTDzSfaQh8XwZUl3SBpOF8ITcw2Mg46EFUjXEo/PEpfSffDMBwbGwY2EFUimSsHD+Rs8LognJ07uTnfCIwMMjINjjAMgnt6SZkr63PNi2LhdTLfCM7vFYxqAdQ8omDu0IYcN8Ml4Q+OgltAClXWVmS/4XWvv0tXwRLcU8r1e0l5JO0ofduskLVJwNzmAJoYreLjXxG3grrfVdD8cd0XCHN+qYNYcOKIVIXD+U+hySX9R8DgslnQl6QDLBit4bOKnjcbkWUq+YHZbSZsJL1BZ9wKeHZZrY0kJWHK/wby+mvByxojwuPnkdFWSNhIGZOjz0hki78EF8j1C4KS5hKBZjxECZOhjw0VRkv6bMAPhzxZpzbfbSQ9kYGWGOX0t4QbKu4biV7YdIUVg2IyMc3oDIXcLl1Ldcw4hKOtMBTP8ACbcpuwnrK8SzypSGFHWuYSgot9JqiYMSFlPSVMsbZuFtymMKGM3IQiFG5SQpjYKVqGxhXmBKYwoYz0hCOVfxF2qSM8GSX9lcft/TxcAlQcpN9qEa6NJFyRQ7Ugeb6QrgPKup+BFaj1JGcTw75KOOpLDX9EdQGW/p+CxRBWMGCTpEDkM+GkoBS9020W6oII+CtY2dDWHB9BFQHjjJe2n+FVsy0gVtGC+B/m7mG4CoustaQEFsGy7hzRBE5s8yd2v6SogmdGS1lEImXsSZX3mWe72osuAdIyV9CYF8ZTWIWTsbpJ0p4IFaJEfg+TOHadR2iy6DkjfQIqiGiTtqBCnh5v5m1rx6EceTPA4b5kkHzCgJ0Xx/9vWFmJUV+HvHiGNvPVsCnnznOUrMMPpRiBdX1MQT2tTJL0oaVuEv/lcUjfSyStpFLOxpdeaZDFf19CVQHo+oAjy0HUBjUihn9+X1LnRa95tOe/a0a1AcitFETPRJpNazuohaUsKfTyhmde+xHLe3Uf3AsmspoAZawdJLyddl0LfLlP5BYJt5t0GuhiIZyyFK5PWn1RzzpcJ+vNpSVUhtmF7YoDWdLMdrMfop0GSdkqaSCgy8deEwDk/jvj7uxRMrdhK0r9Jei/E32y3fIwd6GYgnBUq3nd8tvehirRzTtilnMZJuiDmNiZZzrs5dDNQXrWkehX3rtCHLG3/JVLP28J4RQpXZmzm/rt0M1BeUZ9PbKy1pBniBgiE+45xdsJtXGQ59w/QzUDLvipoUTxc5g1rlcHtfiNpCGnntLUZfbA5LJ6jBZyzU8W9G3RVhdjcnPL2XhBr4vniyYwKy4uWx0A1XZ097kp12zuS/qHAx7+pws9nS+qrYBWFJJYpuFuxv6TfknbefGAMY2DC7ayyfJw/oauB77whnh/sHjJWl0taH+P1dyj5DRqwo3fIPp6bwrZsjoEldDUQmEdR1KEYcZsb8rU3S7qRNPNemL5elMJ2bM9B/KB4phEFdztFUQ0KHsiO62ZJyxVM53by9eokzZdUQ4rlxuYQefRmCtuZ6NC4+ETBzD3DxOovKIhOFMRTWltSAmXcHyKHalPYTg+Hx8gmSXeSCsgz1lI8td1MSqCMdoavPDTmw3iZK6kjaYE8eYlCaOTGCeRbpceZ9qa0HZ9WsFmjYPURwGsjKYIt3iQDlDOlQg7Vp7SdiZ6OoedL7y+AdyiCzbevSQ1U0KdCDh1JaTtX5mA8fSjp4dKxoIxWhMC63ZJ+RhjIUcR2RNKZGeRQHqdo+0LBlJNvKZhQpFbBCj6ANWHuqit6AypZklEOfWM41zc6NO6WK7hMfZWCx5z2KXiUDDCqmqJHYUQqrquQQ5eltJ11Mv+1QT9JCxQ8d+vaWFxNqsG0lRQ9CiNSUy6HbklpG3MM5vkLzWyvq6TpCi5vujIerybVYMoQCh6FEakqN1fu9JS2McFgno+psO12kkZJWqjgJppDlsbj/iIk0xmMJyv+SAhCOUwIENJLktq38LP2KW3jG4P7v7TCzzeV2kON/q21pH9SsALHeZLOlXSOpLNL7SxJfyvpL1Pcz/oiJBOFMXsTSsmLyvYRAoS0RNL4Fn6W1pqGPzC077tLZ4FR/U+phdWxVEB/USqqP5f0K0nfj/AaPyTVYAKXR6NNmAyEtUNmL8lPM5TnT1uO2/Xi641TsFBxtqYRAs4YYUy5AnNrCq9vaumnNZbjNk/BIxmPq/JsU/9JmiFtWzkLjNReJ2UQQY3MLvhr6nGNqxyL4xVqfg3KWlIMaRtMoYvcniVtEFFLD+EfS+G1PzaU550cjWXT9S4vLkoScSk1OzcQgsj+lxAgotda+PczJPVO+NpnG9rntY7Gso2CmwU/U/Dc9Z9IL6SNM8Do7X7SBhGNKJNPMxwdw+CMsZD6EIJYjhICRFTu8YUaB/d3B11GYSyqGkJAfiITB8v87JeKf2fptYb2dw9dxhtPUf2KEJCfyMTxCj/vF/N1qwzt7yG6jDeeovo5IYhlLyFARGdV+Pl/xHzdQYb291u6jMJYVEyjFM82QoCIzqzw8x9I6hLxNW9VMA+pCUfoMgojhRFRbCEEMHAGdmnE1zQ520s9XUZhJM6IYhMhQEQrQvxOlEnF71Iw8TaFkTdspIzLJRRFuCPKDC53Gd4XvkenMBYWyR/dm4QAMVV6NvA8BYuFV7JY0ZZkioOvCyiMhbWNEETGBOKI69UQvzNNwZqELfmNpAEZ7OtHdBeKap6Y3o1pspCVgSFzbEqZ19hMnnPGCLNWEoJIXiEESOCCkL/3Xgv/PrzC2WRa1tNVKLI+nAFGateTMoipR8gcG1PmNWozyvPH6C4UHQUvXDtMqiCBAY1yaaqkpyQtLf3/E5LqJI0v8/c1Geb61XQXim4fRS9Um06qIKHbJd0d829ni+/RgcxsFkUvTGtNqsCi7RnlOQ/2O4ybb7LD8jKVPaPy6+kBpmU14f82Qk1hRPDdBsr7IyGARe0y3NZWwk1hBJdOKpknpoGDXT/JcFtfEm4KI6TzCUFZgwkBLDuR4bbeJ9wURkjtCUGL/osQwAGrMtxWN8KNousk7jZtqTGJMlxyKMPc70m4OWMssl8TghaNJgRwyJ8z3NaDhBtF9iFnhs22O0gNOGZqxmNgJiFHUVEET2+PkxZw0CUWxsIwwo6iuYUieFqbR1rAYdssjIk2hB1F8hKF8JR2LykBx02wMC72Enac1F3Sxwqe6Zmm8Ouo+YRi+F3bTcrDE99YGB+rCTuqm0mMg5Im5ugYb6cYntaGkvrwwPNcUYENH1S4rDBNwdpoPttAITyt7SD14YFHLY6RvoS/mEZFTJQ9kl4onYH59FAshbD5dgtDAI57x+L4qBc341jVymLBSKqu1DYpuAS7p9S+VDB7xbHSdk5+V3BC0rel/24l6QwFExyc1+g1vy393vFSOyHpgKQ1MfZvgKTFpFizvpD0U8IAxz/U2vS2gkdHUBBLPT3LOVL6FDlNUv8QxzmTM8OybThDAY6635ExMoWuKIbZOXpjP1Q6I+zRwrFupPiVbTsZDnDUNofGSW+6I9/m5PxN/rJGx9qWwsdNBvBSez5AIisvFuSNfn7peB+k6IVqKxgacMxUB8fJc3RL/hTtkYW3FdwMROEL1wCXvOPoOLmGrsmPXbzx0yq0mxgmcMRFDo+TeronOybXY6yTdC4hRgX9CQEc4fIz0j9UcPMiMmDqOcZdFEWEVC/pLMIAB6yWdKnj+9hJ0jq6yr8zxhsois5ZKHenYvsR3QNH+PBA/QN0k5/Wie/NXGqDG/VNN9lZNYCFWuFDUfRlTPegu/wyg0LkxZ1s6+XmYy6ALTd4NK5fp7v8MThhZ78vaaykrk1et7ukEQqe5dlOsQvd+lToL5dmITrG8IFl8zwb3zV0mR/Gx+zg2ZK6RNxWlaQhClbaXijpMwrhKS3s3XVjHdpnVhOATSs8G+Or6DI/7IzYsbsk9Up5H2ok/UHFnqf0yogxu8aR/f5XhhAs+sJATu/hw2SxVUfs0HEZ7VdHSQ+pOLPv3BgzTu1lf7aeMQwjWGTqe8BXDY6ZWXSb2yaH7Mg3LO/ntQoWPD6Ww6KYxuK/n1jc/wkMI+SoMDaeIP9eg+MGjrogROd9IfdmOOlX+sSVh6J4f4pxsTXh+1iGEnJSGJs7AehtaNxMp+vc9Hu5cdk0iRslrfW0KD5tIB5PWTiOkQwlWNIm5VzuVeYk4n0DY6cDXejPJy0fn027SMHMErs9KYomp4bK+pnUaxlKsKRdinm8NsT2XpGZ7zPhiAHNdNJ+SZ1zcGxDHT+L3J5BDLIsjtxhBxc/4EdtHUNub1LK42cwXeiO/k0657YcHuMVDhbIgxke/9yMjgnwvTAuj7jNMSmOn6/pQndcqOJc5x4iNxYgPmLh2J82fEzrGUrIQWHsEmO7Q1McR5PoRnf0VHCNvihs3Jhysh23eNz3iOexQGFsqb2bYNu9JR3lygt891tJX1oojLaNM3Rct5JS8Lww9ku4/bYKLocm3Y/L6ErYtkD5+06xkhMGju9yUgkeF8ZNKe1DG0mHEu7LTLoSLhhpuChucehY+4obb0BhbNpuSHE/Oifclzq6Eq7oKulTAwVjgWPH+ZCBY/yE9IFl1Qnyd4+B/Uk6S05XuhQumZ5Ssdgp6XoHj2+rgcLIpR/YNiRB/ppaFebOBPv0CF0K1/RVssm4XV5l4oiBwjiKlIFli2Pmbq3h/VohZsJBztwXMZkf8OCYTHy/2ItUgUX9E+TuMMP7Fvf7xo/pVrjuiVKiNk3eHQqWwLrOk+O41FBhrCZFYEBHBY8udFewgPklCh7Ab5pvO+T2TWOLYuzXfrofPmmvYLYgHw00VBirSAskcJWkOxTcqLYlZM4dU/JZrJ7L6Ph6iDu9AWelOXUVhRFxdVAw0cQa2Z2aMcuvAOKsxjGAVAHMG2boDaYdoUUIoyR9JDcm8d+V8bH3jLGPL5MygHnXGnqTYbkplDNOwbOCLq1uM81CHHaJy6mAc0zNenMxoUUzHnGsGNouOE/G2M8XSSPArM6G3mR6E1o0MtbhgtggaaGluMS9+a0bKQWYZeKN5gbCCgUrrBx2vCie8HD8vUVqAWbtUPpvNncQ1kK7XuEfs7DdLrEcq7dj7vdo0gww50nl40YG2DdEyaZOzLJ9oeAZZNtGxdz/o6QbYI6JO1OfJ6yFMlLS554UxAYFM1e54oKcHAeQO2m/8awjpIUwtHTm5UtBfExSWwfjuDbBMdWQhuGcQQgQ0ToF81Cm5e8Iaa6NVXBjzdkO7dN7pQLzqb5bT/EMBZcc/+z4h7VlCcbfeElvkJJA+q5RPp4Lgzl9FTzW4MrZ3xYF32X34aoNU8UBpnxJYSycKU36bJ+k1aWCM0nSLEkbHCqGbym/N3a9nCAuH5LKgBl3p/wmxkPIbpsgd78L3CvpA0nPSrpNxfgerZd4dhjI3eUcBqpfVjlQAD8vnaHOLRXA7gXvk08TxHInKQ2YcU+Kb3qTCKfTNlsohLWSpitYjxCnG5kwvjcRQsCMYym9CS4mlE57P4NC+HUpD64m3KHtTBDvHYQPMGNySm+KnxBKpy0zWBCXSRpEiGP5nfgKA3BSGm+Ohwmj02YZKIiPy41p1ny3UskeYwFgwF0pvVG2JZTOGppiQXxaUjtC6syH02GEDzBjp1iXMc9+o3QumcKMJIuIbyd8gBm3iOWn8qx1wjfeqwihceMT9NE4wgeYUZuwMC4ihE6rV7zvEZGdx8XsU4BT+icsjNw+7raPIvbneEJmxdKY428JoQPM2CrmTM2rFRH6cQzhsirunao8QwoYkHTljb6E0FmLKIq5PsNvkHSEsAFm7ElQGEcTPmfND9F/6wmTUzbFGIOzMtivvmJSBxTMrQkK45uEz1lzQ/Rfd8LknC0xxuFQw/u0r7SdDnQPiiTOHYwNkg4QOmc9U6HvlhMiJ12geCtxmJpwo/FaklV0D4pkppgBp2iFsZoQOatK0sGI4/AbA/vReJasV+gWFE11gsJ4K+Fz0sNl+uxRwuO8LrI/l+pxsTg5Ci7uGn5vEDonzW6hv94lNN64OsZ4fCulbb/T5HU70x0ootvE84x5sk3ccJMHcZaq+krBd5VxrWjmNbvQFSgqJhTPh5YmqX6K0Hgp7jqqt0TYxiBJD0o60czr1NEFKLK3Yw7AyYSuon4ZbmsqZ/a582TMsVkraUST16oqnYkuKBW9MEuPAYU1IsHgQ3kvSGqT0baekJ0HwWHWG0o2U9XxmH/Xg9CjyNonGHQm3ngvzFl8s1rwd1Yz/dOa9M6FjUpvEeowbakPQWlFXsCwrZL+McHfL1TwTFW9gmexDpRafenf90vaq1OnI+shqUbS9yWtlfTPCu7IaytprKT7cvTB40xJfzK8nTk6dTaUdZI6kdq5sV/SjzPYzmFJf0O4AWlixp9IK7WZOYtvFpdTxzWJ4QzSOlc6ZDT2WIwcKLnIscKI6No2ieF9hCR3Rhked7sIMXCqOtkviHsk9aIrYtvfKJb9CUcuvWpo7L1GaIHTTZadYnhMwR2Vl9MFiR3jrLsQ9qY4/uolDSOkQPM6WyqMfXIe1yzvsuX7xWLol9LYW0UogcpqMyyIdZIGEvJUbRNTwBXFownH372EEAjnzgwKYr2COVph5kzibsJQGHEn5riY0AHRHDVYFMcQXiA1D0Qcf4sIGRDPEwbOEP8gFjcGTDgRchxOI1RAfGnchLNLwew1VYQTMCrMXMd35fHA/w89yti7XjiYLgAAAABJRU5ErkJggg==" style="width:100%;height:100%;object-fit:cover;object-position:left bottom;clip-path:inset(0 52% 0 0);filter:sepia(.5)">'
+    }
+    h += '<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.45);color:rgba(255,255,255,.8);font-family:var(--font-b);font-size:5px;letter-spacing:.1em;text-transform:uppercase;text-align:center;padding:1px 0">Nu</div>'
+    h += '</div>'
+    h += '<div style="background:#DDD0B0;border:1.5px solid rgba(0,0,0,.4);border-radius:1px;position:relative;overflow:hidden">'
+    if (isTasteDomain && photosAfter) {
+      h += '<img src="'+photosAfter+'" style="width:100%;height:100%;object-fit:cover;filter:'+afterFilter+'">'
+    } else {
+      h += '<img src="data:image/png;base64,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" style="width:100%;height:100%;object-fit:cover;object-position:right bottom;clip-path:inset(0 0 0 52%);filter:sepia(.35) contrast(1.2) brightness(.9) saturate(.8) hue-rotate(80deg)">'
+    }
+    h += '<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.45);color:rgba(255,255,255,.8);font-family:var(--font-b);font-size:5px;letter-spacing:.1em;text-transform:uppercase;text-align:center;padding:1px 0">+1yr</div>'
+    h += '</div></div>'
+
+    // affirmation
+    h += '<div style="padding:2px 3px 0;height:32px;position:relative;overflow:visible">'
+    h += '<div style="position:absolute;top:-8px;right:12px;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:8px solid rgba(0,0,0,.7);z-index:12"></div>'
+    h += '<div style="position:absolute;top:-5px;right:15px;border-left:3px solid transparent;border-right:3px solid transparent;border-bottom:6px solid #fff;z-index:13"></div>'
+    h += '<div style="background:#fff;border:1.5px solid rgba(0,0,0,.6);border-radius:4px 4px 4px 1px;padding:3px 5px;font-family:var(--font-d);font-style:italic;font-size:6.5px;color:#1A1208;line-height:1.3;height:100%;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">'+d.aff+'</div>'
+    h += '</div>'
+
+    // daily checks
+    h += '<div style="padding:3px 4px 3px;border-top:1px solid rgba(0,0,0,.1)">'
+    h += '<div style="font-family:var(--font-b);font-size:6px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--green);margin-bottom:2px">'+d.n+' system</div>'
+    h += '<div style="font-family:var(--font-b);font-size:5.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);font-weight:700;margin-bottom:2px;border-bottom:1px solid rgba(0,0,0,.08);padding-bottom:1px">Daily</div>'
+    d.daily.forEach(function(c) {
+      h += '<div style="display:flex;align-items:flex-start;gap:3px;margin-bottom:1.5px">'
+      h += '<div style="width:9px;height:9px;border:1.5px solid rgba(0,0,0,.55);border-radius:1px;flex-shrink:0;background:#fff;margin-top:1px"></div>'
+      h += '<div style="font-family:var(--font-b);font-size:6px;color:var(--ink2);line-height:1.3">'+c+'</div>'
+      h += '</div>'
+    })
+    h += '<div style="margin-top:3px;padding:3px 4px;background:rgba(74,103,65,.08);border-left:2px solid var(--green)">'
+    h += '<div style="font-family:var(--font-b);font-size:6px;color:var(--ink);line-height:1.35">'+d.outcome+'</div>'
+    h += '</div>'
+    h += '</div>'
+
+    // lock overlay for locked domains
+    if (!isUnlocked) {
+      h += '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(245,239,224,.15);border-radius:2px">'
+      h += '<div style="font-size:16px">🔒</div>'
+      h += '</div>'
+    }
+
+    h += '</div>'
+  })
+
+  grid.innerHTML = h
+
+  // Animate: grow first domain FROM its actual position TO center of viewport
+  setTimeout(function() {
+    var cards = grid.children
+    window._zoomedCard = null
+    var firstCard = null
+
+    // Dim locked + other unlocked cards
+    for (var i = 0; i < cards.length; i++) {
+      var card = cards[i]
+      if (card.style.filter === '' && !firstCard) {
+        firstCard = card
+        window._zoomedCard = card
+        // hide original in place (ghost will replace it visually)
+        setTimeout(function(){ firstCard.style.opacity = '0' }, 50)
+      } else if (card.style.filter !== '') {
+        card.classList.add('dom-dimmed')
+      } else {
+        card.style.transition = 'opacity .8s ease .4s'
+        card.style.opacity = '.65'
+      }
+    }
+
+    if (!firstCard) return
+
+    // Get exact position of the first card
+    var rect = firstCard.getBoundingClientRect()
+    var cardW = rect.width
+    var cardH = rect.height
+
+    // Target: center of viewport
+    var targetX = window.innerWidth * 0.38
+    var targetY = window.innerHeight * 0.5
+    var targetW = Math.min(360, window.innerWidth * 0.32)
+    var scale = targetW / cardW
+
+    // Create ghost starting at exact card position
+    var ghost = firstCard.cloneNode(true)
+    ghost.id = 'domGhost'
+    ghost.removeAttribute('class')
+    ghost.style.cssText = ''
+    ghost.style.position = 'fixed'
+    ghost.style.left = rect.left + 'px'
+    ghost.style.top = rect.top + 'px'
+    ghost.style.width = cardW + 'px'
+    ghost.style.background = '#EDE4CC'
+    ghost.style.border = '2px solid rgba(0,0,0,.82)'
+    ghost.style.borderRadius = '2px'
+    ghost.style.boxShadow = '2px 2px 0 rgba(0,0,0,.6)'
+    ghost.style.zIndex = '500'
+    ghost.style.overflow = 'visible'
+    ghost.style.transformOrigin = 'top left'
+    ghost.style.transform = 'scale(1)'
+    ghost.style.transition = 'none'
+    ghost.style.pointerEvents = 'none'
+    window.domGhostRef = ghost
+    document.body.appendChild(ghost)
+
+    // Compute final position BEFORE animating (known values)
+    var tx = targetX - rect.left - (cardW * scale / 2)
+    var ty = targetY - rect.top - (cardH * scale / 2)
+
+    // Final ghost bounds after transform (calculated, not measured)
+    var finalLeft = rect.left + tx   // left edge after translate
+    var finalTop  = rect.top  + ty   // top edge after translate
+    var finalW    = cardW * scale
+    var finalH    = cardH * scale
+
+    // Position CTA immediately (before animation starts) — next to final position
+    var bubble = document.getElementById('floatCTA')
+    if (bubble) {
+      var fl = document.getElementById('floatLockedCount')
+      if (fl) fl.textContent = lockedCount
+      var ctaLeft = finalLeft + finalW + 20
+      // clamp to viewport
+      if (ctaLeft + 320 > window.innerWidth - 8) ctaLeft = finalLeft - 340
+      bubble.style.position = 'fixed'
+      bubble.style.left = ctaLeft + 'px'
+      bubble.style.top = (finalTop + finalH / 2 - 60) + 'px'
+      bubble.style.right = 'auto'
+      bubble.style.transform = 'translateY(-50%)'
+      bubble.style.margin = '0'
+      bubble.style.display = 'none' // hide until ghost is 80% done
+    }
+
+    // Start animation
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        ghost.style.transition = 'transform 0.7s cubic-bezier(.25,.46,.45,.94), box-shadow 0.7s ease'
+        ghost.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')'
+        ghost.style.boxShadow = '0 40px 100px rgba(0,0,0,.28), 0 8px 28px rgba(0,0,0,.16)'
+      })
+    })
+
+    // Show CTA at 80% of animation = 800ms
+    setTimeout(function() {
+      if (bubble) bubble.style.display = 'block'
+    }, 550)
+
+  }, 300)
+}
+
+var WHEEL_COLS=[
+  ['#F2C99A','#D9A870','#B07840'],['#A8DFB0','#6EB87A','#3A7A48'],
+  ['#AABFF5','#7090D8','#3A5AAA'],['#C9A8F0','#9878D0','#6040A0'],
+  ['#F5AACC','#D878A0','#A04870'],['#90DFC4','#50B090','#207858'],
+  ['#DDDD88','#B8B850','#888820'],['#F5B090','#D88060','#A85030'],
+  ['#BAA8FF','#8878E0','#5040B0'],['#88B8FF','#5080D8','#2048A8'],
+  ['#90E0A0','#50B860','#207830'],['#88DDDD','#40A8A8','#207070']
+]
+
+function drawWheel(score) {
+  var svg=document.getElementById('repWheel')
+  if(!svg)return
+  var cx=220,cy=220,r3=170,r2=125,r1=80,N=12
+  var DNAMES=['Finance','Body','Mind','Spirit','Rels','Career','Environ','Creativ','Identity','Time','Health','Impact']
+
+  function ap(r,a1,a2){
+    var x1=cx+Math.cos(a1)*r,y1=cy+Math.sin(a1)*r,x2=cx+Math.cos(a2)*r,y2=cy+Math.sin(a2)*r
+    return 'M'+cx+','+cy+' L'+x1+','+y1+' A'+r+','+r+' 0 '+(a2-a1>Math.PI?1:0)+',1 '+x2+','+y2+' Z'
+  }
+
+  var domScores=DNAMES.map(function(d,i){
+    var b=2+Math.random()*4+(heartSel.indexOf(d)!==-1?2:0)
+    return Math.min(9,b+score*.35)
+  })
+
+  var h=''
+  for(var i=0;i<N;i++){var a1=-Math.PI/2+(2*Math.PI/N)*i,a2=a1+2*Math.PI/N;h+='<path d="'+ap(r3,a1,a2)+'" fill="'+WHEEL_COLS[i][0]+'" opacity="'+(0.4+domScores[i]/10*.5)+'"/>'}
+  h+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r2+'" fill="#F5EFE0" opacity="0.88"/>'
+  for(var i=0;i<N;i++){var a1=-Math.PI/2+(2*Math.PI/N)*i,a2=a1+2*Math.PI/N;h+='<path d="'+ap(r2,a1,a2)+'" fill="'+WHEEL_COLS[i][1]+'" opacity="'+(0.35+domScores[i]/10*.45)+'"/>'}
+  h+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r1+'" fill="#F5EFE0" opacity="0.92"/>'
+  for(var i=0;i<N;i++){var a1=-Math.PI/2+(2*Math.PI/N)*i,a2=a1+2*Math.PI/N;h+='<path d="'+ap(r1,a1,a2)+'" fill="'+WHEEL_COLS[i][2]+'" opacity="'+(0.25+domScores[i]/10*.35)+'"/>'}
+  h+='<circle cx="220" cy="220" r="52" fill="#F5EFE0" opacity="0.96"/>'
+  h+='<text x="220" y="216" text-anchor="middle" font-family="Cormorant Garamond,serif" font-size="13" font-weight="600" fill="#1A1208">ASCEND</text>'
+  h+='<text x="220" y="230" text-anchor="middle" font-family="DM Mono,monospace" font-size="7" letter-spacing=".1em" fill="#9A8868">LIFE WHEEL</text>'
+  h+='<g stroke="#F5EFE0" stroke-width="1" opacity="0.7">'
+  for(var i=0;i<N;i++){var a=-Math.PI/2+(2*Math.PI/N)*i;h+='<line x1="220" y1="220" x2="'+(cx+Math.cos(a)*r3)+'" y2="'+(cy+Math.sin(a)*r3)+'"/>'}
+  h+='</g>'
+  svg.innerHTML=h
+}
+
+/* ══ SHARE ══ */
+function shareText() {
+  return userName+' waste €'+Math.round(wastedHrs*hourlyRate*365).toLocaleString('nl')+'/year doing nothing. Wake-up call: ascendmylife.com'
+}
+function doShareWA(e){ e.preventDefault(); window.open('https://wa.me/?text='+encodeURIComponent(shareText()),'_blank') }
+function doShareTW(e){ e.preventDefault(); window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(shareText()),'_blank') }
+function doShareIG(e){ e.preventDefault(); doCopy(document.querySelector('.sh-btn')); alert('Link gekopieerd — plak in Instagram!') }
+function doCopy(btn){
+  navigator.clipboard.writeText('https://ascendmylife.com/wake-up?ref='+encodeURIComponent(userName))
+  document.getElementById('copyIcon').textContent='✓'
+  setTimeout(function(){ document.getElementById('copyIcon').textContent='🔗' },2000)
+}
+
+function doSubmit() {
+  var e=document.getElementById('gateEmail').value
+  if (!e.includes('@')){ alert('Vul een geldig e-mailadres in'); return }
+  window.location.href='assessment.html?name='+encodeURIComponent(userName)+'&email='+encodeURIComponent(e)
+}
+function doSocial(p){ window.location.href='assessment.html?name='+encodeURIComponent(userName)+'&auth='+p }
+
+/* ══ INIT ══ */
+calcUpdate('2','35')
+window.addEventListener('resize', function(){ drawChart() })
+setTimeout(function(){ drawChart() }, 200)
+
+// Start Three.js immediately on s1
+startThree()
+document.getElementById('threeCanvas').classList.add('show')
+
+// Animate slider fills on load
+updateSliderFills()
+
+// Live slider fill + animated counter
+function updateSliderFills() {
+  var sl1 = document.getElementById('sl1')
+  var sl2 = document.getElementById('sl2')
+  if (!sl1 || !sl2) return
+  // Create fill overlays
+  var b1 = document.getElementById('slFill1')
+  var b2 = document.getElementById('slFill2')
+  if (b1) {
+    var pct1 = (parseFloat(sl1.value) - parseFloat(sl1.min)) / (parseFloat(sl1.max) - parseFloat(sl1.min))
+    b1.style.width = (pct1 * 100) + '%'
+  }
+  if (b2) {
+    var pct2 = (parseFloat(sl2.value) - parseFloat(sl2.min)) / (parseFloat(sl2.max) - parseFloat(sl2.min))
+    b2.style.width = (pct2 * 100) + '%'
+  }
+}
+
+// Patch onHChange / onRChange to also update fills + animate cards
+var _onH = onHChange, _onR = onRChange
+onHChange = function(v) {
+  _onH(v)
+  var sl1 = document.getElementById('sl1')
+  var b1 = document.getElementById('slFill1')
+  if (b1 && sl1) {
+    var pct = (parseFloat(v) - parseFloat(sl1.min)) / (parseFloat(sl1.max) - parseFloat(sl1.min))
+    b1.style.width = (pct * 100) + '%'
+  }
+  animateCards()
+  shakeBigIfHigh(v, 4)
+}
+onRChange = function(v) {
+  _onR(v)
+  var sl2 = document.getElementById('sl2')
+  var b2 = document.getElementById('slFill2')
+  if (b2 && sl2) {
+    var pct = (parseFloat(v) - parseFloat(sl2.min)) / (parseFloat(sl2.max) - parseFloat(sl2.min))
+    b2.style.width = (pct * 100) + '%'
+  }
+  animateCards()
+}
+
+function animateCards() {
+  ['rDay','rYear','r5yr'].forEach(function(id) {
+    var el = document.getElementById(id)
+    if (!el) return
+    el.classList.remove('val-pop')
+    void el.offsetWidth
+    el.classList.add('val-pop')
+  })
+  // Re-animate bubble
+  var b = document.querySelector('.bubble')
+  if (b) { b.classList.remove('bubble-anim'); void b.offsetWidth; b.classList.add('bubble-anim') }
+}
+
+function shakeBigIfHigh(v, threshold) {
+  if (parseFloat(v) >= threshold) {
+    var h = document.querySelector('#s1 .headline')
+    if (h) { h.style.animation='none'; void h.offsetWidth; h.style.animation='shake .4s ease' }
+  }
+}
+
+// Animate bubble on load
+setTimeout(function(){
+  var b = document.querySelector('.bubble')
+  if (b) b.classList.add('bubble-anim')
+}, 600)
+
+// ── GHOST LURE for both sliders ──
+var lureT1 = 0, lureT2 = 0.5  // offset so they don't sync
+var sl1Dragging = false, sl2Dragging = false
+
+document.getElementById('sl1').addEventListener('mousedown', function(){ sl1Dragging=true })
+document.getElementById('sl1').addEventListener('touchstart', function(){ sl1Dragging=true })
+document.getElementById('sl2').addEventListener('mousedown', function(){ sl2Dragging=true })
+document.getElementById('sl2').addEventListener('touchstart', function(){ sl2Dragging=true })
+window.addEventListener('mouseup', function(){ sl1Dragging=false; sl2Dragging=false })
+window.addEventListener('touchend', function(){ sl1Dragging=false; sl2Dragging=false })
+
+;(function lureTick(){
+  requestAnimationFrame(lureTick)
+  var sl1 = document.getElementById('sl1')
+  var sl2 = document.getElementById('sl2')
+  var l1 = document.getElementById('lure1')
+  var l2 = document.getElementById('lure2')
+  if (!sl1 || !l1) return
+
+  // Lure 1
+  if (!sl1Dragging) {
+    lureT1 += 0.008
+    var cycle1 = lureT1 % 1
+    var pct1 = (parseFloat(sl1.value) - parseFloat(sl1.min)) / (parseFloat(sl1.max) - parseFloat(sl1.min))
+    var drift1 = cycle1 * 0.18  // drift 18% ahead
+    var pos1 = Math.min(1, pct1 + drift1)
+    var alpha1 = cycle1 < 0.2 ? cycle1/0.2*0.5 : cycle1 < 0.65 ? 0.5 : (1-cycle1)/0.35*0.5
+    l1.style.left = (pos1 * 100) + '%'
+    l1.style.opacity = alpha1
+  } else {
+    l1.style.opacity = 0
+    lureT1 = 0
+  }
+
+  // Lure 2
+  if (!sl2Dragging) {
+    lureT2 += 0.007
+    var cycle2 = lureT2 % 1
+    var pct2 = (parseFloat(sl2.value) - parseFloat(sl2.min)) / (parseFloat(sl2.max) - parseFloat(sl2.min))
+    var drift2 = cycle2 * 0.18
+    var pos2 = Math.min(1, pct2 + drift2)
+    var alpha2 = cycle2 < 0.2 ? cycle2/0.2*0.5 : cycle2 < 0.65 ? 0.5 : (1-cycle2)/0.35*0.5
+    l2.style.left = (pos2 * 100) + '%'
+    l2.style.opacity = alpha2
+  } else {
+    l2.style.opacity = 0
+    lureT2 = 0
+  }
+})()
+
+// Chart height = container height
+function resizeChart() {
+  drawChart()
+}
+window.addEventListener('resize', resizeChart)
+// Hide scroll hint on any scroll
+document.addEventListener('scroll', function() {
+  var sh = document.getElementById('scrollHint')
+  if (sh) sh.style.display = 'none'
+}, {passive:true, once:true})
+setTimeout(resizeChart, 50)
+setTimeout(resizeChart, 300)
+
+
+function downloadPDF() {
+  window.print()
+}
+
+function attachScrollFade() {
+  var sp = document.getElementById('fixedScroll')
+  if (!sp || sp._scrollBound) return
+  sp._scrollBound = true
+  var onScroll = function() {
+    if (window.scrollY > 400) {
+      sp.style.transition = 'opacity .4s ease'
+      sp.style.opacity = '0'
+      sp._gone = true
+      setTimeout(function(){ sp.style.display='none' }, 420)
+      window.removeEventListener('scroll', onScroll)
+    }
+  }
+  window.addEventListener('scroll', onScroll, {passive:true})
+}
+
+function closeDomainPreview() {
+  // Show scroll pill when CTA dismissed
+  var sp = document.getElementById('fixedScroll')
+  if (sp && !sp._gone) {
+    sp.style.opacity = '0'
+    sp.style.display = 'flex'
+    setTimeout(function(){ sp.style.opacity='1' }, 50)
+    attachScrollFade()
+  }
+  // Nuke ghost — use both ref and getElementById for reliability
+  var ghost = window.domGhostRef || document.getElementById('domGhost')
+  if (ghost) {
+    if (ghost.parentNode) ghost.parentNode.removeChild(ghost)
+    window.domGhostRef = null
+  }
+  // Also find by ID as fallback
+  var g2 = document.getElementById('domGhost')
+  if (g2 && g2.parentNode) g2.parentNode.removeChild(g2)
+
+  // Hide CTA
+  var cta = document.getElementById('floatCTA')
+  if (cta) { cta.style.display = 'none'; cta.style.opacity = '1'; cta.style.transition = '' }
+
+  // Restore zoomed card
+  if (window._zoomedCard) {
+    window._zoomedCard.style.transition = 'opacity .3s'
+    window._zoomedCard.style.opacity = '1'
+    window._zoomedCard = null
+  }
+
+  // Restore all dimmed cards
+  var grid = document.getElementById('reportDomGrid')
+  if (grid) {
+    for (var i = 0; i < grid.children.length; i++) {
+      grid.children[i].classList.remove('dom-dimmed')
+      grid.children[i].style.transition = 'opacity .3s'
+      grid.children[i].style.opacity = '1'
+    }
+  }
+}
+
+function devSkipToReport() {
+  userName = 'Willem'
+  userAge = '35'
+  wastedHrs = 3
+  hourlyRate = 75
+  lastH = '3'
+  lastR = '75'
+  stressSel = [1,2,4]
+  shadowPick = 'qualifier'
+  heartSel = ['Vrijheid','Energie','Gezin','Groei']
+  goS6()
+}
+
+</script>
+
+
+<!-- FLOATING CTA BUBBLE — fixed, appears over report -->
+<div id="floatCTA" style="display:none;position:fixed;z-index:1000;width:320px">
+  <div style="background:#fff;border:2.5px solid rgba(0,0,0,.82);border-radius:16px 16px 4px 16px;box-shadow:6px 6px 0 rgba(0,0,0,.75);padding:24px 26px;position:relative;overflow:visible;-webkit-font-smoothing:antialiased">
+
+    <!-- CLOSE BUTTON — outside bubble top-right -->
+    <button id="ctaCloseBtn" onclick="closeDomainPreview()" style="
+      position:absolute;top:-18px;right:-18px;
+      width:44px;height:44px;
+      background:var(--ink);color:#fff;
+      border:2.5px solid rgba(0,0,0,.82);
+      border-radius:50%;
+      box-shadow:3px 3px 0 rgba(0,0,0,.7);
+      font-family:var(--font-b);font-size:18px;font-weight:900;
+      cursor:pointer;
+      display:flex;align-items:center;justify-content:center;
+      line-height:1;z-index:20;
+    ">✕</button>
+
+    <!-- tail pointing left -->
+    <div style="position:absolute;top:36px;left:-14px;border-top:9px solid transparent;border-bottom:9px solid transparent;border-right:14px solid rgba(0,0,0,.82)"></div>
+    <div style="position:absolute;top:40px;left:-9px;border-top:5px solid transparent;border-bottom:5px solid transparent;border-right:10px solid #fff;z-index:1"></div>
+
+    <div style="font-family:var(--font-b);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);font-weight:700;margin-bottom:8px">Jouw blueprint · gedeeltelijk</div>
+    <div style="font-family:var(--font-d);font-size:28px;font-weight:600;color:var(--ink);letter-spacing:-.03em;line-height:1.1;margin-bottom:8px"><span id="floatLockedCount">8</span> domeinen<br>nog verborgen.</div>
+    <div style="font-family:var(--font-b);font-size:11px;color:var(--ink3);line-height:1.65;margin-bottom:16px">Life Wheel · Shadow Layer · Archetype<br>Systemen op maat · Volledige poster<br><span style="color:var(--green);font-weight:700">✓ Gratis · ✓ Geen creditcard</span></div>
+
+    <button onclick="doSocial('google')" style="width:100%;padding:14px;background:var(--green);color:#fff;border:2px solid rgba(0,0,0,.82);border-radius:2px;box-shadow:3px 3px 0 rgba(0,0,0,.75);font-family:var(--font-b);font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;margin-bottom:8px;animation:heartbeat 2.4s ease-in-out infinite">G &nbsp; Doorgaan met Google →</button>
+
+    <div style="display:flex;gap:6px">
+      <input id="floatEmail" type="email" placeholder="jouw@email.com" style="flex:1;padding:10px 12px;font-family:var(--font-b);font-size:11px;color:var(--ink);background:var(--bg2);border:1.5px solid rgba(0,0,0,.5);border-radius:2px;outline:none">
+      <button onclick="var e=document.getElementById('floatEmail').value;if(e.includes('@'))alert('Verstuurd!')" style="padding:10px 14px;background:var(--ink);color:var(--bg);border:1.5px solid rgba(0,0,0,.5);border-radius:2px;font-family:var(--font-b);font-size:11px;font-weight:700;cursor:pointer">→</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+var _os = showScreen
+showScreen = function(id) {
+  _os(id)
+  var el = document.getElementById('fixedScroll')
+  if (el) el.style.display = 'none' // always hide on screen switch
+}
+</script>
+</body>
+</html>
